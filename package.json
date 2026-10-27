@@ -1,15 +1,15 @@
+
 {
   "name": "sri-lankan-school-portal",
   "version": "1.0.0",
   "private": true,
- "scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "lint": "next lint",
-  "preview": "opennextjs-cloudflare build && opennextjs-cloudflare dev",
-  "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
-
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "clsx": "^2.1.0",
