@@ -38,21 +38,21 @@ export default function ContactPage() {
                   <MapPin className="w-5 h-5 text-school-gold mt-1 flex-shrink-0" />
                   <div>
                     <strong className="block text-white">ලිපිනය:</strong>
-                    විද්‍යාලය මාවත, ශ්‍රී ලංකා ජාතික පාසල.
+                    කුඹුක්වැව, කුඹුක්කල්ල, පුත්තලම.
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-school-gold flex-shrink-0" />
                   <div>
                     <strong className="block text-white">දුරකථන:</strong>
-                    +94 11 234 5678 / +94 11 234 5679
+                     
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-school-gold flex-shrink-0" />
                   <div>
                     <strong className="block text-white">විද්‍යුත් තැපෑල:</strong>
-                    office@collegesrilanka.sch.lk
+                    Kumbukwewaattadassi@gmail.com
                   </div>
                 </div>
               </div>

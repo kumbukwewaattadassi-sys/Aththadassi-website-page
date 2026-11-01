@@ -5,7 +5,7 @@ import Footer from '@/components/Footer';
 import NoticeTicker from '@/components/NoticeTicker';
 
 export const metadata: Metadata = {
-  title: 'ශ්‍රී ලංකා ජාතික පාසල | Sri Lanka Model College',
+  title: 'පු/කුඹුක්වැව අත්ථදස්සි කනිෂ්ඨ විද්‍යාලය | Aththadassi Junior School',
   description: 'Excellence in Education, Sports and Discipline - Official School Portal',
 };
 

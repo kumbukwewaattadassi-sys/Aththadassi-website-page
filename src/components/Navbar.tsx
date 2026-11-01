@@ -126,7 +126,7 @@ export default function Navbar() {
                 textTransform: "uppercase",
               }}
             >
-              Junior School • Est. 1948
+              Junior School • Est. 1963
             </p>
           </div>
         </Link>

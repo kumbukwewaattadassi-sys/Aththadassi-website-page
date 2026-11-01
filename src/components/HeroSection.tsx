@@ -6,14 +6,15 @@ import Link from "next/link";
 const slides = [
   {
     url: "https://res.cloudinary.com/n911ylla/image/upload/f_auto,q_auto/685919899_1430362865799214_5670876124687149843_n",
-    label: "ප්‍රධාන අධ්‍යාපන සංකීර්ණය",
+    label: "ශිෂ්‍ය ජීවන රටා",
   },
   {
     url: "https://res.cloudinary.com/n911ylla/image/upload/q_auto/832247094_1580265014142331_668856309073154634_n.jpg",
+    label: "ශිෂ්‍ය ජීවන රටා",
   },
   {
     url: "https://res.cloudinary.com/n911ylla/image/upload/q_auto/732984997_1485544940281006_4701285444358849644_n.jpg",
-    label: "ශිෂ්‍ය ජීවන රටාව",
+    label: "ශිෂ්‍ය ජීවන රටා",
   },
 ];
 
@@ -119,7 +120,7 @@ export default function HeroSection() {
                     {/* Caption Overlay */}
                     <div className="absolute bottom-3 left-4 right-4 text-white">
                       <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#F5CE68] text-slate-950 inline-block mb-1">
-                        Campus Life
+                        Aththadassi kv
                       </span>
                       <p className="text-xs font-bold text-white truncate drop-shadow">
                         {s.label}
