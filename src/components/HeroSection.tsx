@@ -5,15 +5,14 @@ import Link from "next/link";
 
 const slides = [
   {
-    url: "https://scontent.fcmb12-1.fna.fbcdn.net/v/t39.30808-6/732984997_1485544940281006_4701285444358849644_n.jpg?stp=cp6_dst-jpg_tt6&cstp=mx2048x1152&ctp=s2048x1152&_nc_cat=106&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeFdr6E9pjA3TStkDFaEmUP1-E7YT3wTVWD4TthPfBNVYBu9ZFB3kegCAyUIRetZJ5q-DJG2AZj_gJzhh7QKwTly&_nc_ohc=wf3ghtWxWCEQ7kNvwHShEfB&_nc_oc=AdpccqHO5HsIrTVN-w57pqgNUI3E5aR9k5RcN1ZPx6f2RObzGiM05nvUMTl-LTfxyl8&_nc_zt=23&_nc_ht=scontent.fcmb12-1.fna&_nc_gid=oCVuRX8v1Z721LejEuDlDw&_nc_ss=7a2a8&oh=00_AQNRUh3w5ZdNmtAtvQODYvznrzEEeuji-zGAS7h4279kbA&oe=6AE68CA5",
+    url: "https://res.cloudinary.com/n911ylla/image/upload/f_auto,q_auto/685919899_1430362865799214_5670876124687149843_n",
     label: "ප්‍රධාන අධ්‍යාපන සංකීර්ණය",
   },
   {
-    url: "https://scontent.fcmb3-2.fna.fbcdn.net/v/t39.30808-6/733145991_1485539623614871_1429121932923332965_n.jpg?stp=dst-jpg_tt6&cstp=mx1280x960&ctp=s1280x960&_nc_cat=109&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeE2zp2_ibBC4pufmVOxOU36WIqiLFzszO9YiqIsXOzM75siM9MQibbonWGE35jTg02ezJfSuAIotPLolhRtR4Bc&_nc_ohc=GuX3puRMoLMQ7kNvwH8oGyT&_nc_oc=AdpIK32Y7I7d1OcCVon4hBxFXJ39YuTlZeABtLkjsucxbSirYcn1vh8jfQwljVOJpaQ&_nc_zt=23&_nc_ht=scontent.fcmb3-2.fna&_nc_gid=Pc5wyEfQca5pL_wPVipjSA&_nc_ss=7a2a8&oh=00_AQNudc2yjr0suHDFtjNOanF4V57FkF9i1mPfosou5eVmOw&oe=6AE6B36C",
-    label: "ක්‍රීඩා සහ සංස්කෘතික පරිශ්‍රය",
+    url: "https://res.cloudinary.com/n911ylla/image/upload/q_auto/832247094_1580265014142331_668856309073154634_n.jpg",
   },
   {
-    url: "https://scontent.fcmb3-2.fna.fbcdn.net/v/t39.30808-6/685919899_1430362865799214_5670876124687149843_n.jpg?stp=dst-jpg_tt6&cstp=mx1280x960&ctp=s590x590&_nc_cat=109&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeFuG8alA5tFIrrnkxuwCel8U_bcK9-qcyVT9twr36pzJU4mz7DLG_HA4ASw9fxU322uUM3v9SeSIjExsQwvrIa5&_nc_ohc=qdhNngAkhrkQ7kNvwFm-0PQ&_nc_oc=Adq4IRZHpIG4M2sg2dbZb5P382qAv2aA4jwZQYHi5zgLY6pUsuwYUP1HLHYcZeBsb4U&_nc_zt=23&_nc_ht=scontent.fcmb3-2.fna&_nc_gid=aNtMPzw8YPhevnhUmhqWvQ&_nc_ss=7b2a8&oh=00_AQM_Bn6WWVPFUiy02xoutX2BsOWYPjbt3Ns9WM3_yzAWLA&oe=6AE6A056",
+    url: "https://res.cloudinary.com/n911ylla/image/upload/q_auto/732984997_1485544940281006_4701285444358849644_n.jpg",
     label: "ශිෂ්‍ය ජීවන රටාව",
   },
 ];
@@ -23,7 +22,7 @@ const stats = [
   { value: "26+", sinhala: "ආචාර්ය මණ්ඩලය", english: "Faculty" },
   { value: "98%", sinhala: "සාමාර්ථ ප්‍රතිශතය", english: "Pass Rate" },
   { value: "1963", sinhala: "ස්ථාපිත වර්ෂය", english: "Founded" },
-];
+]; 
 
 export default function HeroSection() {
   const [active, setActive] = useState(0);
@@ -65,7 +64,7 @@ export default function HeroSection() {
           <div className="flex flex-col items-center text-center">
             <div className="w-20 h-20 rounded-full border-2 border-[#E0C37B] bg-[#020a05] shadow-[0_0_25px_rgba(224,195,123,0.35)] flex items-center justify-center overflow-hidden mb-2">
               <img
-                src="https://yt3.googleusercontent.com/KRA70oqBWoSNJ4mtw41dxA1npgdd0kPA4dMmELMo34N0h6JCCR6B3JiV24oZEutt8AOccQs3=s160-c-k-c0x00ffffff-no-rj"
+                src="https://res.cloudinary.com/n911ylla/image/upload/q_auto/KRA70oqBWoSNJ4mtw41dxA1npgdd0kPA4dMmELMo34N0h6JCCR6B3JiV24oZEutt8AOccQs3_s160-c-k-c0x00ffffff-no-rj.jpg"
                 alt="School Emblem"
                 className="w-full h-full object-cover"
                 onError={(e) => {
