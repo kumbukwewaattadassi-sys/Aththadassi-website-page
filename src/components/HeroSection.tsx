@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 const slides = [
@@ -23,55 +23,33 @@ const stats = [
   { value: "26+", sinhala: "ආචාර්ය මණ්ඩලය", english: "Faculty" },
   { value: "98%", sinhala: "සාමාර්ථ ප්‍රතිශතය", english: "Pass Rate" },
   { value: "1963", sinhala: "ස්ථාපිත වර්ෂය", english: "Founded" },
-];
-
-const DURATION = 5500;
+]; 
 
 export default function HeroSection() {
   const [active, setActive] = useState(0);
-  const progressBarRef = useRef<HTMLDivElement | null>(null);
 
-  // CPU Lag එක වළක්වා DOM එකට කෙළින්ම Smooth Progress එක ලබා දීම (Zero CPU Re-renders)
+  // Smooth Slide Switch
   useEffect(() => {
-    let animId: number;
-    const start = performance.now();
-
-    const renderLoop = (now: number) => {
-      const elapsed = now - start;
-      const progressRatio = Math.min(elapsed / DURATION, 1);
-
-      if (progressBarRef.current) {
-        const targetWidth = Math.max(26, progressRatio * 100 * 0.55);
-        progressBarRef.current.style.width = `${targetWidth}px`;
-      }
-
-      if (elapsed >= DURATION) {
-        setActive((prev) => (prev + 1) % slides.length);
-      } else {
-        animId = requestAnimationFrame(renderLoop);
-      }
-    };
-
-    animId = requestAnimationFrame(renderLoop);
-    return () => cancelAnimationFrame(animId);
-  }, [active]);
+    const timer = setInterval(() => {
+      setActive((prev) => (prev + 1) % slides.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <>
       {/* ──────────────────────────────────────────────────────────
-          1. MOBILE VIEW (md:hidden)
-          120FPS GPU Enabled - Smooth & Zero Lag
+          1. REFINED FRAMELESS MOBILE VIEW (md:hidden)
       ────────────────────────────────────────────────────────── */}
-      <div className="block md:hidden bg-[#040e07] text-white pt-24 pb-12 px-4 relative overflow-hidden font-sans min-h-screen flex flex-col justify-between transform-gpu">
+      <div className="block md:hidden bg-[#030a05] text-white pt-20 pb-8 px-4 font-sans relative overflow-hidden">
         
-        {/* Soft Ambient Blobs */}
-        <div className="absolute -top-16 -left-16 w-64 h-64 bg-[#10B981]/15 rounded-full blur-3xl pointer-events-none transform-gpu" />
-        <div className="absolute top-1/2 -right-16 w-64 h-64 bg-[#E0C37B]/10 rounded-full blur-3xl pointer-events-none transform-gpu" />
-
-        <div className="relative z-10 space-y-5">
-          {/* 1. Mobile Center Logo */}
-          <div className="flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full border-2 border-[#E0C37B] bg-[#020a05] shadow-[0_0_25px_rgba(224,195,123,0.35)] flex items-center justify-center overflow-hidden mb-2 transform-gpu">
+        <div className="flex flex-col gap-5 relative z-10">
+          
+          {/* 1. Header Information (Emblem, Name, Motto, Title) */}
+          <div className="flex flex-col items-center text-center space-y-2.5 pt-2">
+            
+            {/* Center Logo */}
+            <div className="w-20 h-20 rounded-full border-2 border-[#E0C37B] bg-[#020a05] shadow-[0_0_20px_rgba(224,195,123,0.35)] flex items-center justify-center overflow-hidden">
               <img
                 src="https://res.cloudinary.com/n911ylla/image/upload/q_auto/KRA70oqBWoSNJ4mtw41dxA1npgdd0kPA4dMmELMo34N0h6JCCR6B3JiV24oZEutt8AOccQs3_s160-c-k-c0x00ffffff-no-rj.jpg"
                 alt="School Emblem"
@@ -86,88 +64,77 @@ export default function HeroSection() {
               <span className="m-logo-fb hidden text-3xl">🎓</span>
             </div>
 
-            <h2 className="text-white font-extrabold text-sm tracking-wide">
-              පු/කුඹුක්වැව අත්ථදස්සි කනිෂ්ඨ විද්‍යාලය
-            </h2>
-            <p className="text-[#E0C37B] text-[10px] font-semibold mt-0.5 tracking-wider">
-              පාසල් ආරම්භය :- 1963/ 01/ 02
-            </p>
-          </div>
+            {/* School Name & Founded */}
+            <div>
+              <h2 className="text-white font-extrabold text-sm tracking-wide">
+                පු/කුඹුක්වැව අත්ථදස්සි කනිෂ්ඨ විද්‍යාලය
+              </h2>
+              <p className="text-[#E0C37B] text-[10px] font-semibold mt-0.5 tracking-wider">
+                පාසල් ආරම්භය :- 1963/ 01/ 02
+              </p>
+            </div>
 
-          {/* 2. Mobile Title & Motto Badge */}
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E0C37B]/10 border border-[#E0C37B]/40 text-[#F6DE95] text-[10.5px] font-bold tracking-wider">
+            {/* Motto Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E0C37B]/10 border border-[#E0C37B]/40 text-[#F6DE95] text-[10.5px] font-bold tracking-wider">
               <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" />
               &quot; මානිවතන අභික්කම &quot;
             </div>
 
-            <h1 className="text-3xl font-black leading-tight text-white tracking-tight">
+            {/* Title */}
+            <h1 className="text-3xl font-black leading-tight text-white tracking-tight pt-1">
               දැනුමෙන් සන්නද්ධ <br />
               <span className="text-[#F5CE68]">විශිෂ්ටතම පරපුරක්</span>
             </h1>
           </div>
 
-          {/* 3. Mobile Dedicated Showcase Frame (GPU Optimized) */}
-          <div className="relative mx-auto w-full max-w-sm">
-            <div className="w-full h-56 rounded-[2.5rem] bg-gradient-to-tr from-[#065F46] via-[#10B981] to-[#E0C37B] p-1.5 shadow-2xl relative overflow-hidden transform-gpu">
-              <div className="w-full h-full rounded-[2.2rem] bg-slate-900 overflow-hidden relative">
-                {slides.map((s, idx) => (
-                  <div
-                    key={idx}
-                    className={`absolute inset-0 transition-opacity duration-700 ease-out transform-gpu ${
-                      idx === active ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
-                    }`}
-                    style={{
-                      transform: idx === active ? "translate3d(0,0,0) scale(1)" : "translate3d(0,0,0) scale(1.04)",
-                      backfaceVisibility: "hidden",
-                    }}
-                  >
-                    <img
-                      src={s.url}
-                      alt={s.label}
-                      className="w-full h-full object-cover object-center"
-                      loading={idx === 0 ? "eager" : "lazy"}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
-                    
-                    {/* Caption Overlay */}
-                    <div className="absolute bottom-3 left-4 right-4 text-white pointer-events-none">
-                      <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#F5CE68] text-slate-950 inline-block mb-1">
-                        Aththadassi kv
-                      </span>
-                      <p className="text-xs font-bold text-white truncate drop-shadow">
-                        {s.label}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+          {/* 2. Frameless Clean Photo Slider (කිසිදු ඝන frame එකක් නොමැතිව පිරිසිදුව) */}
+          <div className="relative w-full aspect-[16/10] max-h-64 rounded-3xl overflow-hidden shadow-2xl bg-[#08170c]">
+            {slides.map((s, idx) => (
+              <img
+                key={idx}
+                src={s.url}
+                alt={s.label}
+                loading={idx === 0 ? "eager" : "lazy"}
+                className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-700 ease-in-out ${
+                  idx === active ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                }`}
+              />
+            ))}
 
-                {/* Mobile Slider Indicator Dots */}
-                <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-black/60 px-2.5 py-1 rounded-full backdrop-blur-md">
-                  {slides.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActive(i)}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        i === active ? "w-5 bg-[#F5CE68]" : "w-1.5 bg-white/50"
-                      }`}
-                      aria-label={`Slide ${i + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
+            {/* Subtle Gradient for Bottom Details */}
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
+
+            {/* Slide Label Badge */}
+            <div className="absolute bottom-3 left-4 z-20">
+              <span className="text-[9.5px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-black/60 text-[#F5CE68] border border-white/20 backdrop-blur-sm">
+                Aththadassi kv • {slides[active].label}
+              </span>
+            </div>
+
+            {/* Indicator Dots */}
+            <div className="absolute bottom-3 right-4 z-20 flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-full backdrop-blur-sm border border-white/20">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActive(i)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === active ? "w-5 bg-[#F5CE68]" : "w-1.5 bg-white/40"
+                  }`}
+                  aria-label={`Slide ${i + 1}`}
+                />
+              ))}
             </div>
           </div>
 
-          {/* 4. Mobile Description Card */}
-          <div className="bg-[#020d06]/85 p-3.5 rounded-2xl border border-white/10 shadow-lg text-center backdrop-blur-md">
-            <p className="m-0 text-[#E2ECE5] text-xs leading-relaxed font-normal">
+          {/* 3. Description Card */}
+          <div className="bg-[#06150b] p-4 rounded-2xl border border-white/10 text-center shadow-md">
+            <p className="m-0 text-[#E2ECE5] text-[11.5px] leading-relaxed font-normal">
               “මානිවතන අභික්කම” යන අපගේ ආදර්ශ පාඨය පෙරදැරි කරගෙන, දැනුමෙන්, හැකියාවෙන් සහ යහපත් ගුණාංගවලින් පිරිපුන් අනාගත පරපුරක් ගොඩනැගීම සඳහා අපි එක්ව ඉදිරියට යමු.
             </p>
           </div>
 
-          {/* 5. Mobile CTA Buttons */}
-          <div className="flex items-center gap-2.5 pt-1">
+          {/* 4. Action Buttons */}
+          <div className="flex items-center gap-2.5">
             <Link
               href="/about"
               className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-full bg-gradient-to-r from-[#E2BC6B] to-[#C39947] text-[#050F08] text-xs font-black shadow-lg active:scale-95 transition-transform"
@@ -180,14 +147,14 @@ export default function HeroSection() {
 
             <Link
               href="/contact"
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-full bg-[#020d06]/90 text-white text-xs font-bold border border-[#E0C37B]/60 shadow-md backdrop-blur-md active:scale-95 transition-transform"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-full bg-[#06150b] text-white text-xs font-bold border border-[#E0C37B]/60 shadow-md active:scale-95 transition-transform"
             >
               <span>විමසීම්</span>
             </Link>
           </div>
 
-          {/* 6. Mobile Trust Badges */}
-          <div className="flex items-center gap-1.5 justify-center flex-wrap pt-1">
+          {/* 5. Trust Badges */}
+          <div className="flex items-center gap-1.5 justify-center flex-wrap pt-0.5">
             {[
               { icon: "🏅", label: "Junior College" },
               { icon: "✅", label: "Skills Development" },
@@ -195,7 +162,7 @@ export default function HeroSection() {
             ].map((b, i) => (
               <div
                 key={i}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#020d06]/70 border border-white/10 text-[9.5px] text-[#E2ECE5] font-medium"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#06150b] border border-white/10 text-[9.5px] text-[#E2ECE5] font-medium"
               >
                 <span>{b.icon}</span>
                 <span>{b.label}</span>
@@ -203,24 +170,24 @@ export default function HeroSection() {
             ))}
           </div>
 
-          {/* 7. Mobile Stats Grid */}
-          <div className="grid grid-cols-4 gap-1.5 pt-3 border-t border-white/10 text-center">
+          {/* 6. Stats Grid */}
+          <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-white/10 text-center">
             {stats.map((s, i) => (
-              <div key={i} className="p-1.5 rounded-xl bg-white/5 border border-white/5">
+              <div key={i} className="p-2 rounded-xl bg-white/5 border border-white/5">
                 <p className="m-0 text-sm font-black text-white leading-none">{s.value}</p>
                 <p className="m-0 mt-1 text-[9px] font-bold text-[#F5CE68] leading-tight">{s.sinhala}</p>
-                <p className="m-0 text-[7.5px] text-white/40 uppercase">{s.english}</p>
+                <p className="m-0 text-[7px] text-white/40 uppercase">{s.english}</p>
               </div>
             ))}
           </div>
+
         </div>
       </div>
 
       {/* ──────────────────────────────────────────────────────────
-          2. PC & TABLET VIEW (hidden md:flex)
-          Smooth 120Hz Transition
+          2. PC & TABLET VIEW (hidden md:flex) - කිසිදු වෙනසක් කර නොමැත
       ────────────────────────────────────────────────────────── */}
-      <div className="hidden md:flex flex-col min-h-screen relative overflow-hidden font-sans transform-gpu">
+      <div className="hidden md:flex flex-col min-h-screen relative overflow-hidden font-sans">
         <section
           style={{
             minHeight: "100vh",
@@ -241,11 +208,9 @@ export default function HeroSection() {
                 style={{
                   position: "absolute",
                   inset: 0,
-                  transition: "opacity 1.2s cubic-bezier(0.25, 1, 0.5, 1), transform 5.5s linear",
+                  transition: "opacity 1.2s ease, transform 5s linear",
                   opacity: i === active ? 1 : 0,
-                  transform: i === active ? "translate3d(0,0,0) scale(1.025)" : "translate3d(0,0,0) scale(1)",
-                  willChange: "transform, opacity",
-                  backfaceVisibility: "hidden",
+                  transform: i === active ? "scale(1.02)" : "scale(1)",
                 }}
               >
                 <img
@@ -325,16 +290,14 @@ export default function HeroSection() {
                 justifyContent: "center",
                 overflow: "hidden",
                 marginBottom: 14,
-                backdropFilter: "blur(6px)",
-                transition: "transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)",
                 cursor: "pointer",
-                transform: "translate3d(0,0,0)",
+                transition: "transform 0.25s ease",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.transform = "translate3d(0,0,0) scale(1.05)";
+                (e.currentTarget as HTMLDivElement).style.transform = "scale(1.05)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.transform = "translate3d(0,0,0) scale(1)";
+                (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
               }}
             >
               <img
@@ -424,7 +387,6 @@ export default function HeroSection() {
                 border: "1px solid rgba(224, 195, 123, 0.55)",
                 boxShadow: "0 4px 16px rgba(0, 0, 0, 0.5)",
                 marginBottom: 18,
-                backdropFilter: "blur(8px)",
               }}
             >
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F59E0B" }} />
@@ -484,7 +446,6 @@ export default function HeroSection() {
                 background: "rgba(1, 8, 4, 0.58)",
                 padding: "12px 24px",
                 borderRadius: 20,
-                backdropFilter: "blur(6px)",
                 border: "1px solid rgba(255, 255, 255, 0.12)",
                 maxWidth: "54ch",
                 marginBottom: 32,
@@ -530,17 +491,16 @@ export default function HeroSection() {
                   letterSpacing: "0.02em",
                   boxShadow:
                     "0 6px 24px rgba(226, 188, 107, 0.45), 0 2px 8px rgba(0, 0, 0, 0.5)",
-                  transition: "transform 0.18s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.18s ease",
-                  transform: "translate3d(0,0,0)",
+                  transition: "transform 0.18s ease, box-shadow 0.18s ease",
                 }}
                 onMouseEnter={(e) => {
                   const a = e.currentTarget as HTMLAnchorElement;
-                  a.style.transform = "translate3d(0,0,0) scale(1.05)";
+                  a.style.transform = "scale(1.05)";
                   a.style.boxShadow = "0 10px 30px rgba(226, 188, 107, 0.6)";
                 }}
                 onMouseLeave={(e) => {
                   const a = e.currentTarget as HTMLAnchorElement;
-                  a.style.transform = "translate3d(0,0,0) scale(1)";
+                  a.style.transform = "scale(1)";
                   a.style.boxShadow = "0 6px 24px rgba(226, 188, 107, 0.45)";
                 }}
               >
@@ -570,22 +530,20 @@ export default function HeroSection() {
                   fontWeight: 700,
                   textDecoration: "none",
                   border: "1.5px solid rgba(224, 195, 123, 0.55)",
-                  backdropFilter: "blur(8px)",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
-                  transition: "background 0.2s, border-color 0.2s, transform 0.18s cubic-bezier(0.25, 1, 0.5, 1)",
-                  transform: "translate3d(0,0,0)",
+                  transition: "background 0.2s, border-color 0.2s, transform 0.18s",
                 }}
                 onMouseEnter={(e) => {
                   const a = e.currentTarget as HTMLAnchorElement;
                   a.style.background = "rgba(224, 195, 123, 0.2)";
                   a.style.borderColor = "#E2BC6B";
-                  a.style.transform = "translate3d(0,0,0) scale(1.03)";
+                  a.style.transform = "scale(1.03)";
                 }}
                 onMouseLeave={(e) => {
                   const a = e.currentTarget as HTMLAnchorElement;
                   a.style.background = "rgba(1, 8, 4, 0.65)";
                   a.style.borderColor = "rgba(224, 195, 123, 0.55)";
-                  a.style.transform = "translate3d(0,0,0) scale(1)";
+                  a.style.transform = "scale(1)";
                 }}
               >
                 විමසීම්
@@ -618,7 +576,6 @@ export default function HeroSection() {
                     background: "rgba(1, 8, 4, 0.65)",
                     border: "1px solid rgba(255, 255, 255, 0.16)",
                     boxShadow: "0 2px 10px rgba(0,0,0,0.4)",
-                    backdropFilter: "blur(8px)",
                   }}
                 >
                   <span style={{ fontSize: 13 }}>{b.icon}</span>
