@@ -49,7 +49,6 @@ const GRADES = [
   { label: "ශ්‍රේණිය 11", value: "Grade 11" }
 ];
 
-// Grade 6-9 සඳහා පොදු මූලික විෂයන් 6
 const CORE_SUBJECTS = [
   "විද්‍යාව", 
   "ගණිතය", 
@@ -59,7 +58,6 @@ const CORE_SUBJECTS = [
   "තොරතුරු තාක්ෂණය (ICT)"
 ];
 
-// Grade 10 සහ 11 සඳහා පමණක් එකතු වන කාණ්ඩ විෂයන්
 const BASKET_SUBJECTS = [
   "වාණිජ සහ ගිණුම්කරණය",
   "චිත්‍ර",
@@ -68,7 +66,7 @@ const BASKET_SUBJECTS = [
 ];
 
 const ALL_SUBJECTS = [...CORE_SUBJECTS, ...BASKET_SUBJECTS];
-const QUIZ_TIME_SECONDS = 240; // විනාඩි 4ක් (240s)
+const QUIZ_TIME_SECONDS = 240;
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -82,12 +80,10 @@ function shuffleArray<T>(array: T[]): T[] {
 export default function QuizGamePage() {
   const [gameState, setGameState] = useState<'select-grade' | 'setup' | 'playing' | 'result'>('select-grade');
   
-  // Selection States
   const [selectedGrade, setSelectedGrade] = useState(GRADES[4]);
   const [subject, setSubject] = useState(CORE_SUBJECTS[0]);
   const [playerName, setPlayerName] = useState('');
 
-  // Playing States
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: number }>({});
@@ -95,15 +91,12 @@ export default function QuizGamePage() {
   const [submitting, setSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Live Timer States
   const [timeLeft, setTimeLeft] = useState(QUIZ_TIME_SECONDS);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Leaderboard States
   const [leaderboard, setLeaderboard] = useState<ScoreRecord[]>([]);
   const [leaderboardSubject, setLeaderboardSubject] = useState(CORE_SUBJECTS[0]);
 
-  // ශ්‍රේණිය අනුව විෂයන් තෝරාගැනීම (10, 11 සඳහා පමණක් කාණ්ඩ විෂයන්)
   const availableSubjects = (selectedGrade.value === "Grade 10" || selectedGrade.value === "Grade 11")
     ? ALL_SUBJECTS
     : CORE_SUBJECTS;
@@ -131,7 +124,6 @@ export default function QuizGamePage() {
     fetchLeaderboardData(leaderboardSubject);
   }, [leaderboardSubject]);
 
-  // Countdown Timer Logic
   useEffect(() => {
     if (gameState === 'playing') {
       setTimeLeft(QUIZ_TIME_SECONDS);
@@ -139,7 +131,7 @@ export default function QuizGamePage() {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
-            handleFinishQuiz(); // වෙලාව ඉවර වූ සැණින් ස්වයංක්‍රීයව ලකුණු පිටුවට යයි
+            handleFinishQuiz();
             return 0;
           }
           return prev - 1;
@@ -154,14 +146,12 @@ export default function QuizGamePage() {
     };
   }, [gameState]);
 
-  // ශ්‍රේණියක් තෝරාගත් විට විෂය reset කර setup එකට යාම
   const handleGradeSelect = (g: typeof GRADES[0]) => {
     setSelectedGrade(g);
     setSubject(CORE_SUBJECTS[0]);
     setGameState('setup');
   };
 
-  // Start Quiz
   const handleStartQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!playerName.trim()) return;
@@ -218,7 +208,6 @@ export default function QuizGamePage() {
     }
   };
 
-  // වෙලාව ඉවර නැත්නම් පමණක් පිළිතුරු තෝරාගත හැක
   const handleSelectOption = (optionIndex: number) => {
     if (timeLeft <= 0 || submitting) return;
     setUserAnswers(prev => ({
@@ -227,7 +216,6 @@ export default function QuizGamePage() {
     }));
   };
 
-  // ලකුණු සුරැකී අවසන් Result Screen එකට යාම
   const handleFinishQuiz = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setSubmitting(true);
@@ -276,77 +264,75 @@ export default function QuizGamePage() {
   const restRanks = leaderboard.slice(3);
 
   return (
-    <div className="min-h-screen bg-[#F0FDF4]/60 pt-24 sm:pt-28 pb-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#F0FDF4]/70 pt-20 sm:pt-28 pb-10 px-3 sm:px-6 lg:px-8 transform-gpu subpixel-antialiased selection:bg-emerald-500 selection:text-white">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
 
-        {/* Global Gamified Header */}
-        <header className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border-2 border-emerald-100 rounded-3xl p-5 shadow-[0_10px_30px_rgba(16,185,129,0.06)]">
-          <div className="flex items-center gap-3.5 text-center sm:text-left">
-            <div className="w-12 h-12 rounded-2xl bg-amber-400 text-amber-950 flex items-center justify-center shadow-[0_4px_0_#d97706] shrink-0">
-              <Gamepad2 className="w-7 h-7" />
+        {/* Header Bar */}
+        <header className="flex flex-row items-center justify-between gap-3 bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm transform-gpu will-change-transform">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-400 text-amber-950 flex items-center justify-center shadow-sm shrink-0">
+              <Gamepad2 className="w-5 h-5 sm:w-7 sm:h-7" />
             </div>
-            <div>
-              <div className="flex items-center gap-2 justify-center sm:justify-start">
-                <span className="text-xs font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] sm:text-xs font-black uppercase text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full truncate">
                   Aththadassi Quest
                 </span>
-                <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600">
-                  <Flame className="w-4 h-4 fill-amber-500 text-amber-500 animate-bounce" /> Live Challenge
+                <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold text-amber-600">
+                  <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" /> Live
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                පාසල් විෂය නිර්දේශ Quiz Arena
+              <h1 className="text-sm sm:text-2xl font-black text-slate-900 truncate tracking-tight">
+                Quiz Arena
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-xs shadow-sm">
-              <Sparkles className="w-4 h-4 text-emerald-600" />
-              <span>10 Random Questions • 4 Mins Speed Test</span>
-            </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-[10px] sm:text-xs shrink-0">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600 hidden sm:inline" />
+            <span>4 Mins Speed</span>
           </div>
         </header>
 
-        {/* Main Split Grid */}
-        <main className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* Main Grid: Mobile single-column, Desktop 7:5 */}
+        <main className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
           
           {/* ================= LEFT COLUMN: GAME FRAME ================= */}
           <div className="lg:col-span-7 flex flex-col justify-start">
 
             {/* STAGE 0: GRADE SELECTION SCREEN */}
             {gameState === 'select-grade' && (
-              <div className="h-full bg-white border-2 border-emerald-100 rounded-[2.5rem] p-6 sm:p-8 shadow-[0_15px_35px_rgba(0,0,0,0.03)] space-y-6 animate-in fade-in duration-200">
-                <div className="space-y-1.5 border-b border-slate-100 pb-4">
-                  <span className="text-xs font-extrabold text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full border border-amber-200 inline-block">
-                    පියවර 1: ශ්‍රේණිය තෝරන්න
+              <div className="h-full bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 shadow-sm space-y-4 sm:space-y-6 transform-gpu will-change-transform">
+                <div className="space-y-1 border-b border-slate-100 pb-3 sm:pb-4">
+                  <span className="text-[10px] sm:text-xs font-extrabold text-amber-600 uppercase tracking-widest bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 inline-block">
+                    පියවර 1: ශ්‍රේණිය
                   </span>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-                    ඔබගේ ශ්‍රේණිය මත ක්ලික් කරන්න 🎯
+                  <h2 className="text-base sm:text-2xl font-black text-slate-900">
+                    ඔබගේ ශ්‍රේණිය තෝරන්න 🎯
                   </h2>
-                  <p className="text-slate-500 text-xs sm:text-sm">
-                    ප්‍රශ්නාවලියට සහභාගී වීමට ඔබ ඉගෙනුම ලබන පන්තිය තෝරන්න:
+                  <p className="text-slate-500 text-[11px] sm:text-sm">
+                    ප්‍රශ්නාවලියට සහභාගී වීමට පන්තිය තෝරන්න:
                   </p>
                 </div>
 
-                <div className="space-y-3.5">
+                <div className="grid grid-cols-1 gap-2.5 sm:gap-3.5">
                   {GRADES.map((g) => (
                     <div
                       key={g.value}
                       onClick={() => handleGradeSelect(g)}
-                      className="group flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-white border-2 border-slate-100 hover:border-rose-400 hover:bg-rose-50/20 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 relative overflow-hidden select-none active:scale-[0.99]"
+                      className="group flex items-center justify-between p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-white border border-slate-150 sm:border-2 hover:border-rose-400 hover:bg-rose-50/20 shadow-sm cursor-pointer transition-all duration-150 relative overflow-hidden select-none active:scale-[0.98] transform-gpu will-change-transform"
                     >
-                      <div className="absolute left-0 top-0 bottom-0 w-2.5 bg-rose-500 group-hover:bg-rose-600 transition-colors" />
+                      <div className="absolute left-0 top-0 bottom-0 w-2 sm:w-2.5 bg-rose-500 group-hover:bg-rose-600 transition-colors" />
 
-                      <div className="flex items-center gap-3 pl-2">
-                        <span className="text-sm sm:text-base font-bold text-slate-800 group-hover:text-rose-950 transition-colors">
+                      <div className="flex items-center gap-2.5 pl-2 sm:pl-3">
+                        <span className="text-xs sm:text-base font-bold text-slate-800 group-hover:text-rose-950">
                           {g.label}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400 group-hover:text-rose-600 transition-colors">
+                      <div className="flex items-center gap-1 text-[11px] sm:text-xs font-medium text-slate-400 group-hover:text-rose-600">
                         <span>ප්‍රශ්නෝත්තර</span>
-                        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
                   ))}
@@ -356,38 +342,38 @@ export default function QuizGamePage() {
 
             {/* STAGE 1: SETUP FORM */}
             {gameState === 'setup' && (
-              <div className="h-full bg-white border-2 border-emerald-100 rounded-[2.5rem] p-6 sm:p-8 shadow-[0_15px_35px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-6 animate-in fade-in duration-200">
-                <div className="space-y-2">
+              <div className="h-full bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 shadow-sm flex flex-col justify-between space-y-4 sm:space-y-6 transform-gpu will-change-transform">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full border border-amber-200 inline-block">
+                    <span className="text-[10px] sm:text-xs font-extrabold text-amber-600 uppercase tracking-widest bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 inline-block">
                       පියවර 2: ක්‍රීඩකයා හා විෂය
                     </span>
                     <button
                       onClick={() => setGameState('select-grade')}
-                      className="text-xs font-bold text-slate-500 hover:text-emerald-700 underline flex items-center gap-1"
+                      className="text-[11px] sm:text-xs font-bold text-slate-500 hover:text-emerald-700 underline flex items-center gap-1 active:scale-95"
                     >
-                      <ArrowLeft className="w-3.5 h-3.5" /> ශ්‍රේණිය මාරු කරන්න
+                      <ArrowLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> මාරු කරන්න
                     </button>
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900">
+                  <h2 className="text-lg sm:text-2xl font-black text-slate-900">
                     {selectedGrade.label} සඳහා සූදානම්ද? 🚀
                   </h2>
-                  <p className="text-slate-500 text-xs sm:text-sm">
-                    නම ඇතුළත් කර විෂය තෝරන්න. විනාඩි 4 කවුන්ටරය අවසන් වීමට පෙර ප්‍රශ්න 10 සම්පූර්ණ කරන්න!
+                  <p className="text-slate-500 text-[11px] sm:text-sm">
+                    නම ඇතුළත් කර විෂය තෝරන්න. විනාඩි 4 කවුන්ටරය තුළ ප්‍රශ්න 10 සම්පූර්ණ කරන්න!
                   </p>
                 </div>
 
                 {fetchError && (
-                  <div className="bg-rose-50 border-2 border-rose-200 text-rose-800 px-4 py-3 rounded-2xl text-xs font-bold flex items-center gap-2">
+                  <div className="bg-rose-50 border border-rose-200 text-rose-800 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                     <span>{fetchError}</span>
                   </div>
                 )}
 
-                <form onSubmit={handleStartQuiz} className="space-y-4">
+                <form onSubmit={handleStartQuiz} className="space-y-3.5 sm:space-y-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
-                      <User className="w-4 h-4 text-emerald-700" /> ඔබේ සම්පූර්ණ නම (Your Name)
+                    <label className="block text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-emerald-700" /> නම (Your Name)
                     </label>
                     <input
                       type="text"
@@ -395,28 +381,28 @@ export default function QuizGamePage() {
                       placeholder="උදා: කසුන් පෙරේරා"
                       value={playerName}
                       onChange={(e) => setPlayerName(e.target.value)}
-                      className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-inner"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl px-3.5 py-2.5 sm:py-3 text-slate-900 font-bold text-xs sm:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-all"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
-                        <GraduationCap className="w-4 h-4 text-emerald-700" /> තෝරාගත් ශ්‍රේණිය
+                      <label className="block text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center gap-1">
+                        <GraduationCap className="w-3.5 h-3.5 text-emerald-700" /> ශ්‍රේණිය
                       </label>
-                      <div className="w-full bg-slate-100 border-2 border-slate-200 rounded-2xl px-4 py-3 text-slate-700 font-black text-sm">
+                      <div className="w-full bg-slate-100 border border-slate-200 rounded-xl sm:rounded-2xl px-3.5 py-2.5 sm:py-3 text-slate-700 font-black text-xs sm:text-sm">
                         {selectedGrade.label}
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
-                        <BookOpen className="w-4 h-4 text-emerald-700" /> විෂය (Subject)
+                      <label className="block text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center gap-1">
+                        <BookOpen className="w-3.5 h-3.5 text-emerald-700" /> විෂය (Subject)
                       </label>
                       <select
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
-                        className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-emerald-600 transition-all cursor-pointer"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl px-3.5 py-2.5 sm:py-3 text-slate-900 font-bold text-xs sm:text-sm focus:outline-none focus:border-emerald-600 transition-all cursor-pointer"
                       >
                         {availableSubjects.map((s) => <option key={s} value={s}>{s}</option>)}
                       </select>
@@ -426,17 +412,17 @@ export default function QuizGamePage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 active:translate-y-0.5 text-white font-black py-4 rounded-2xl shadow-[0_5px_0_#065f46] hover:shadow-[0_3px_0_#065f46] active:shadow-none transition-all flex items-center justify-center gap-2 text-base disabled:opacity-50 mt-3"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-black py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 text-xs sm:text-base disabled:opacity-50 mt-2 transform-gpu will-change-transform"
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>අහඹු ප්‍රශ්න සූදානම් වෙමින් පවතී...</span>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>ප්‍රශ්න සූදානම් වෙමින් පවතී...</span>
                       </>
                     ) : (
                       <>
                         <span>Game එක ආරම්භ කරන්න (Start Test)</span>
-                        <ArrowRight className="w-5 h-5" />
+                        <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
@@ -446,85 +432,85 @@ export default function QuizGamePage() {
 
             {/* STAGE 2: PLAYING FRAME */}
             {gameState === 'playing' && questions.length > 0 && (
-              <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="bg-white border-2 border-emerald-100 rounded-3xl p-5 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between text-xs font-black">
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 rounded-xl bg-amber-400 text-slate-950 font-black">
+              <div className="space-y-3 sm:space-y-4 transform-gpu will-change-transform">
+                <div className="bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm space-y-2.5 sm:space-y-3">
+                  <div className="flex items-center justify-between text-[11px] sm:text-xs font-black">
+                    <div className="flex items-center gap-1.5 truncate max-w-[45%]">
+                      <span className="px-2 py-0.5 rounded-lg bg-amber-400 text-slate-950 truncate">
                         {selectedGrade.label}
                       </span>
-                      <span className="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-900">
+                      <span className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-900 truncate">
                         {subject}
                       </span>
                     </div>
 
                     {/* VIBRANT BOLD BLUE COUNTDOWN COUNTER */}
-                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-500/25 border-2 border-blue-400 font-mono text-sm font-black tracking-wider animate-in zoom-in-95">
-                      <Timer className="w-4 h-4 text-blue-200 animate-spin" style={{ animationDuration: '4s' }} />
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-600 text-white shadow-sm border border-blue-400 font-mono text-xs font-black tracking-wider shrink-0 transform-gpu">
+                      <Timer className="w-3.5 h-3.5 text-blue-200 animate-spin" style={{ animationDuration: '4s' }} />
                       <span>{formatTime(timeLeft)}</span>
                     </div>
 
-                    <span className="font-mono text-slate-600 bg-slate-100 px-3 py-1 rounded-xl">
-                      ප්‍රශ්න <strong className="text-emerald-700 text-sm">{currentIndex + 1}</strong> / {questions.length}
+                    <span className="font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg shrink-0">
+                      Q <strong className="text-emerald-700">{currentIndex + 1}</strong>/{questions.length}
                     </span>
                   </div>
 
-                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
+                  <div className="w-full h-2 sm:h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
                     <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-300 ease-out"
+                      className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-200 ease-out transform-gpu will-change-transform"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
                 </div>
 
-                <div className="bg-white border-2 border-emerald-100 rounded-[2.5rem] p-6 sm:p-8 space-y-5 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-800 font-black flex items-center justify-center shrink-0">
-                      Q{currentIndex + 1}
+                <div className="bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 space-y-4 shadow-sm">
+                  <div className="flex items-start gap-2.5 sm:gap-3">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-blue-100 text-blue-800 font-black text-xs sm:text-sm flex items-center justify-center shrink-0 mt-0.5">
+                      {currentIndex + 1}
                     </div>
-                    <h2 className="text-base sm:text-lg font-black text-slate-900 leading-snug pt-0.5">
+                    <h2 className="text-xs sm:text-lg font-black text-slate-900 leading-snug">
                       {questions[currentIndex].question}
                     </h2>
                   </div>
 
-                  {/* Options List (Disabled if timer reaches 0) */}
-                  <div className="space-y-2.5">
+                  {/* Options List */}
+                  <div className="space-y-2 sm:space-y-2.5">
                     {questions[currentIndex].options.map((opt, optIdx) => {
                       const isSelected = userAnswers[currentIndex] === optIdx;
                       return (
                         <div
                           key={optIdx}
                           onClick={() => handleSelectOption(optIdx)}
-                          className={`flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl border-2 transition-all duration-150 ${
-                            timeLeft <= 0 ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer active:scale-[0.99]'
+                          className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition-all duration-150 transform-gpu will-change-transform ${
+                            timeLeft <= 0 ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'
                           } ${
                             isSelected 
-                              ? 'bg-blue-50 border-blue-500 text-blue-950 shadow-[0_3px_0_#3b82f6]' 
-                              : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-white shadow-[0_2px_0_#e2e8f0]'
+                              ? 'bg-blue-50 border-blue-500 text-blue-950 shadow-sm' 
+                              : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-white'
                           }`}
                         >
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                          <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shrink-0 transition-transform ${
                             isSelected 
-                              ? 'bg-blue-600 text-white scale-110 shadow-sm' 
-                              : 'border-2 border-slate-300 bg-white'
+                              ? 'bg-blue-600 text-white scale-105' 
+                              : 'border border-slate-300 bg-white'
                           }`}>
-                            {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                            {isSelected && <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />}
                           </div>
 
-                          <span className="text-xs sm:text-sm font-bold leading-relaxed">{opt}</span>
+                          <span className="text-xs sm:text-sm font-bold leading-snug">{opt}</span>
                         </div>
                       );
                     })}
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between pt-2.5 border-t border-slate-100">
                     <button
                       type="button"
                       disabled={currentIndex === 0 || submitting || timeLeft <= 0}
                       onClick={() => setCurrentIndex(currentIndex - 1)}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border-2 border-slate-200 text-xs font-black text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-all"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl border border-slate-200 text-[11px] sm:text-xs font-black text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-95"
                     >
-                      <ArrowLeft className="w-3.5 h-3.5" /> Previous
+                      <ArrowLeft className="w-3 h-3" /> Prev
                     </button>
 
                     {currentIndex < questions.length - 1 ? (
@@ -532,26 +518,26 @@ export default function QuizGamePage() {
                         type="button"
                         disabled={timeLeft <= 0}
                         onClick={() => setCurrentIndex(currentIndex + 1)}
-                        className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black transition-all shadow-[0_3px_0_#1d4ed8] active:translate-y-0.5 active:shadow-none disabled:opacity-50"
+                        className="inline-flex items-center gap-1 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-black transition-all active:scale-95 disabled:opacity-50 shadow-sm"
                       >
-                        Next <ArrowRight className="w-3.5 h-3.5" />
+                        Next <ArrowRight className="w-3 h-3" />
                       </button>
                     ) : (
                       <button
                         type="button"
                         disabled={submitting}
                         onClick={handleFinishQuiz}
-                        className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all shadow-[0_3px_0_#065f46] active:translate-y-0.5 active:shadow-none disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-black transition-all active:scale-95 disabled:opacity-50 shadow-sm"
                       >
                         {submitting ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>සුරකිමින් පවතී...</span>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>සුරකිමින්...</span>
                           </>
                         ) : (
                           <>
-                            <span>Submit Answers</span>
-                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Submit</span>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
                           </>
                         )}
                       </button>
@@ -561,59 +547,59 @@ export default function QuizGamePage() {
               </div>
             )}
 
-            {/* STAGE 3: RESULTS (කවුන්ටරය අවසන් වූ විට කෙළින්ම ලකුණු පෙන්වීම) */}
+            {/* STAGE 3: RESULTS */}
             {gameState === 'result' && (
-              <div className="space-y-5 animate-in fade-in zoom-in-95 duration-200">
-                <div className="bg-white border-2 border-amber-300 rounded-[2.5rem] p-6 text-center space-y-3 shadow-sm">
-                  <div className="w-14 h-14 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center mx-auto shadow-[0_3px_0_#d97706]">
-                    <Trophy className="w-7 h-7" />
+              <div className="space-y-4 sm:space-y-5 animate-in fade-in zoom-in-95 duration-150 transform-gpu will-change-transform">
+                <div className="bg-white border-2 border-amber-300 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-6 text-center space-y-2.5 shadow-sm">
+                  <div className="w-12 h-12 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center mx-auto shadow-sm">
+                    <Trophy className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black text-slate-900">විශිෂ්ටයි {playerName}! 🎉</h2>
-                    <p className="text-xs text-slate-500 font-semibold">{selectedGrade.label} • {subject}</p>
+                    <h2 className="text-base sm:text-xl font-black text-slate-900">විශිෂ්ටයි {playerName}! 🎉</h2>
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-semibold">{selectedGrade.label} • {subject}</p>
                   </div>
-                  <div className="text-4xl font-black text-slate-900">
-                    {totalCorrect} <span className="text-xl text-slate-400 font-bold">/ {questions.length}</span>
+                  <div className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                    {totalCorrect} <span className="text-lg sm:text-xl text-slate-400 font-bold">/ {questions.length}</span>
                   </div>
                   <div>
                     <button
                       onClick={() => setGameState('select-grade')}
-                      className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-all shadow-sm"
+                      className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] sm:text-xs font-black transition-all active:scale-95 shadow-sm"
                     >
-                      <RotateCcw className="w-3.5 h-3.5" /> තවත් වටයක් Play කරන්න
+                      <RotateCcw className="w-3 h-3" /> තවත් වටයක් Play කරන්න
                     </button>
                   </div>
                 </div>
 
                 {/* Review Questions Box */}
-                <div className="bg-white border-2 border-emerald-100 rounded-[2.5rem] p-5 space-y-3">
-                  <h3 className="text-sm font-black text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
-                    <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
+                <div className="bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-[2.5rem] p-3.5 sm:p-5 space-y-2.5">
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
                     පිළිතුරු සමාලෝචනය (Review)
                   </h3>
 
-                  <div className="space-y-2.5">
+                  <div className="space-y-2 max-h-[350px] overflow-y-auto overscroll-contain pr-1">
                     {questions.map((q, idx) => {
                       const userChoice = userAnswers[idx];
                       const isCorrect = userChoice === q.correct_index;
                       return (
-                        <div key={q.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                        <div key={q.id} className="p-2.5 sm:p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
                           <div className="flex items-start justify-between gap-2">
-                            <h4 className="text-xs font-bold text-slate-900">
+                            <h4 className="text-[11px] sm:text-xs font-bold text-slate-900 leading-snug">
                               {idx + 1}. {q.question}
                             </h4>
                             {isCorrect ? (
-                              <span className="text-[10px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md shrink-0">
+                              <span className="text-[9px] sm:text-[10px] font-black text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">
                                 ✔ හරි
                               </span>
                             ) : (
-                              <span className="text-[10px] font-black text-rose-800 bg-rose-100 px-2 py-0.5 rounded-md shrink-0">
+                              <span className="text-[9px] sm:text-[10px] font-black text-rose-800 bg-rose-100 px-1.5 py-0.5 rounded shrink-0">
                                 ✖ වැරදියි
                               </span>
                             )}
                           </div>
 
-                          <div className="text-[11px] font-semibold space-y-0.5">
+                          <div className="text-[10px] sm:text-[11px] font-semibold space-y-0.5">
                             <p className={isCorrect ? 'text-emerald-700' : 'text-rose-600'}>
                               ඔබේ පිළිතුර: {userChoice !== undefined ? q.options[userChoice] : 'කාලය අවසන් විය'}
                             </p>
@@ -635,24 +621,24 @@ export default function QuizGamePage() {
 
           {/* ================= RIGHT COLUMN: LIVE LEADERBOARD ================= */}
           <div className="lg:col-span-5 flex flex-col justify-start">
-            <div className="h-full bg-white border-2 border-emerald-100 rounded-[2.5rem] p-5 sm:p-7 shadow-[0_15px_35px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-5">
+            <div className="h-full bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-7 shadow-sm flex flex-col justify-between space-y-4 transform-gpu will-change-transform">
               
               <div>
-                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5 sm:pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
-                      <Trophy className="w-5 h-5" />
+                    <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
+                      <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-slate-900">Realtime Rankings</h3>
-                      <p className="text-[10px] text-slate-400 font-semibold">ඉහළම ලකුණු ලබාගත් සිසුන්</p>
+                      <h3 className="text-xs sm:text-sm font-black text-slate-900">Realtime Rankings</h3>
+                      <p className="text-[9px] sm:text-[10px] text-slate-400 font-semibold">ඉහළම ලකුණු ලබාගත් සිසුන්</p>
                     </div>
                   </div>
 
                   <select
                     value={leaderboardSubject}
                     onChange={(e) => setLeaderboardSubject(e.target.value)}
-                    className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-xs font-black text-emerald-900 focus:outline-none cursor-pointer"
+                    className="bg-emerald-50 border border-emerald-200 rounded-lg sm:rounded-xl px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-black text-emerald-900 focus:outline-none cursor-pointer"
                   >
                     {ALL_SUBJECTS.map((s) => (
                       <option key={s} value={s}>{s}</option>
@@ -661,92 +647,90 @@ export default function QuizGamePage() {
                 </div>
 
                 {leaderboard.length === 0 ? (
-                  <div className="py-12 text-center text-slate-400 text-xs font-bold">
+                  <div className="py-8 text-center text-slate-400 text-[11px] sm:text-xs font-bold">
                     මෙම විෂය සඳහා තවම ලකුණු නැත.<br />දැන්ම ප්‍රථමයා වන්න!
                   </div>
                 ) : (
-                  <div className="space-y-4 pt-3">
+                  <div className="space-y-3 pt-2">
                     
-                    <div className="grid grid-cols-3 gap-2 text-center items-end">
+                    {/* Balanced Podium Top 3 Cards */}
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center items-end">
                       
                       {/* 2nd Place */}
-                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex flex-col items-center justify-between min-h-[145px] shadow-sm">
-                        <div className="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center font-black mb-1">
-                          <Medal className="w-3.5 h-3.5" />
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-2 flex flex-col items-center justify-between min-h-[125px] sm:min-h-[145px] shadow-sm">
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center font-black mb-0.5">
+                          <Medal className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         </div>
-                        <span className="text-[9px] font-black text-slate-400 uppercase">2nd</span>
-                        <h4 className="font-black text-slate-900 text-[11px] truncate w-full mt-0.5">
+                        <span className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase">2nd</span>
+                        <h4 className="font-black text-slate-900 text-[10px] sm:text-[11px] truncate w-full mt-0.5">
                           {top2 ? top2.player_name : "-"}
                         </h4>
-                        <span className="text-[9px] text-slate-400 font-semibold truncate w-full">
+                        <span className="text-[8px] sm:text-[9px] text-slate-400 font-semibold truncate w-full">
                           {top2 ? top2.grade : ""}
                         </span>
-                        <span className="mt-1 px-2 py-0.5 rounded-md bg-slate-200 text-slate-900 font-black text-[10px]">
+                        <span className="mt-1 px-1.5 py-0.5 rounded bg-slate-200 text-slate-900 font-black text-[9px] sm:text-[10px]">
                           {top2 ? `${top2.score}/10` : "-"}
                         </span>
                       </div>
 
                       {/* 1st Place */}
-                      <div className="bg-gradient-to-b from-amber-50 to-white border-2 border-amber-300 rounded-2xl p-2.5 flex flex-col items-center justify-between min-h-[160px] shadow-md relative">
-                        <Crown className="w-4 h-4 text-amber-500 fill-amber-400 absolute -top-2.5 left-1/2 -translate-x-1/2" />
-                        <div className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black mb-1 shadow-sm">
-                          <Medal className="w-4 h-4 fill-current" />
+                      <div className="bg-gradient-to-b from-amber-50 to-white border-2 border-amber-300 rounded-xl sm:rounded-2xl p-2 flex flex-col items-center justify-between min-h-[140px] sm:min-h-[160px] shadow-sm relative">
+                        <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-400 absolute -top-2 left-1/2 -translate-x-1/2" />
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black mb-0.5 shadow-sm">
+                          <Medal className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
                         </div>
-                        <span className="text-[9px] font-black text-amber-600 uppercase">1st Gold</span>
-                        <h4 className="font-black text-slate-900 text-xs truncate w-full mt-0.5">
+                        <span className="text-[8px] sm:text-[9px] font-black text-amber-600 uppercase">1st Gold</span>
+                        <h4 className="font-black text-slate-900 text-[11px] sm:text-xs truncate w-full mt-0.5">
                           {top1 ? top1.player_name : "-"}
                         </h4>
-                        <span className="text-[9px] text-slate-500 font-bold truncate w-full">
+                        <span className="text-[8px] sm:text-[9px] text-slate-500 font-bold truncate w-full">
                           {top1 ? top1.grade : ""}
                         </span>
-                        <span className="mt-1 px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-[11px] shadow-sm">
+                        <span className="mt-1 px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-black text-[10px] sm:text-[11px] shadow-sm">
                           {top1 ? `${top1.score}/10` : "-"}
                         </span>
                       </div>
 
                       {/* 3rd Place */}
-                      <div className="bg-amber-50/40 border border-amber-200 rounded-2xl p-2.5 flex flex-col items-center justify-between min-h-[145px] shadow-sm">
-                        <div className="w-7 h-7 rounded-lg bg-amber-800/15 text-amber-800 flex items-center justify-center font-black mb-1">
-                          <Medal className="w-3.5 h-3.5" />
+                      <div className="bg-amber-50/40 border border-amber-200 rounded-xl sm:rounded-2xl p-2 flex flex-col items-center justify-between min-h-[125px] sm:min-h-[145px] shadow-sm">
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-amber-800/15 text-amber-800 flex items-center justify-center font-black mb-0.5">
+                          <Medal className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         </div>
-                        <span className="text-[9px] font-black text-amber-800 uppercase">3rd</span>
-                        <h4 className="font-black text-slate-900 text-[11px] truncate w-full mt-0.5">
+                        <span className="text-[8px] sm:text-[9px] font-black text-amber-800 uppercase">3rd</span>
+                        <h4 className="font-black text-slate-900 text-[10px] sm:text-[11px] truncate w-full mt-0.5">
                           {top3 ? top3.player_name : "-"}
                         </h4>
-                        <span className="text-[9px] text-slate-400 font-semibold truncate w-full">
+                        <span className="text-[8px] sm:text-[9px] text-slate-400 font-semibold truncate w-full">
                           {top3 ? top3.grade : ""}
                         </span>
-                        <span className="mt-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-black text-[10px]">
+                        <span className="mt-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-black text-[9px] sm:text-[10px]">
                           {top3 ? `${top3.score}/10` : "-"}
                         </span>
                       </div>
 
                     </div>
 
-                    {/* 4th Place Onwards */}
+                    {/* 4th Place Onwards Stack */}
                     {restRanks.length > 0 && (
-                      <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block px-1">
-                          අනෙකුත් ස්ථාන
-                        </span>
-                        {restRanks.slice(0, 4).map((item, idx) => {
+                      <div className="space-y-1 pt-1.5 border-t border-slate-100">
+                        {restRanks.slice(0, 3).map((item, idx) => {
                           const rank = idx + 4;
                           return (
                             <div
                               key={item.id}
-                              className="flex items-center justify-between p-2 rounded-xl border border-slate-100 hover:border-slate-200 bg-white transition-all text-xs"
+                              className="flex items-center justify-between p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-slate-100 hover:border-slate-200 bg-white transition-all text-xs"
                             >
-                              <div className="flex items-center gap-2 truncate">
-                                <span className="w-5 h-5 rounded-md bg-slate-100 text-slate-600 font-mono text-[10px] font-black flex items-center justify-center shrink-0">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span className="w-4 h-4 sm:w-5 sm:h-5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] sm:text-[10px] font-black flex items-center justify-center shrink-0">
                                   #{rank}
                                 </span>
                                 <div className="truncate">
-                                  <h5 className="font-bold text-slate-900 truncate leading-tight text-[11px]">{item.player_name}</h5>
-                                  <span className="text-[9px] text-slate-400 font-medium">{item.grade}</span>
+                                  <h5 className="font-bold text-slate-900 truncate leading-tight text-[10px] sm:text-[11px]">{item.player_name}</h5>
+                                  <span className="text-[8px] sm:text-[9px] text-slate-400 font-medium">{item.grade}</span>
                                 </div>
                               </div>
-                              <span className="font-black text-slate-800 shrink-0 ml-2 text-xs">
-                                {item.score} <span className="text-[9px] text-slate-400 font-normal">pts</span>
+                              <span className="font-black text-slate-800 shrink-0 ml-1.5 text-[11px] sm:text-xs">
+                                {item.score} <span className="text-[8px] sm:text-[9px] text-slate-400 font-normal">pts</span>
                               </span>
                             </div>
                           );
@@ -758,8 +742,8 @@ export default function QuizGamePage() {
                 )}
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center text-[10px] font-bold text-slate-500">
-                ⭐ ඉහළම ලකුණු ගන්නා සිසුන් පාසල් ශ්‍රේණිගත කිරීම්වලට ස්වයංක්‍රීයව එක්වේ.
+              <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 text-center text-[9px] sm:text-[10px] font-bold text-slate-500">
+                ⭐ ඉහළම ලකුණු ගන්නා සිසුන් ශ්‍රේණිගත කිරීම්වලට ස්වයංක්‍රීයව එක්වේ.
               </div>
 
             </div>
