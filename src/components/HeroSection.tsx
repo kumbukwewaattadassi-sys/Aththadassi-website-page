@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 
 const slides = [
@@ -23,47 +23,55 @@ const stats = [
   { value: "26+", sinhala: "ආචාර්ය මණ්ඩලය", english: "Faculty" },
   { value: "98%", sinhala: "සාමාර්ථ ප්‍රතිශතය", english: "Pass Rate" },
   { value: "1963", sinhala: "ස්ථාපිත වර්ෂය", english: "Founded" },
-]; 
+];
+
+const DURATION = 5500;
 
 export default function HeroSection() {
   const [active, setActive] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const DURATION = 5500;
+  const progressBarRef = useRef<HTMLDivElement | null>(null);
 
+  // CPU Lag එක වළක්වා DOM එකට කෙළින්ම Smooth Progress එක ලබා දීම (Zero CPU Re-renders)
   useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    setProgress(0);
-    const start = Date.now();
-    intervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - start;
-      const pct = Math.min((elapsed / DURATION) * 100, 100);
-      setProgress(pct);
+    let animId: number;
+    const start = performance.now();
+
+    const renderLoop = (now: number) => {
+      const elapsed = now - start;
+      const progressRatio = Math.min(elapsed / DURATION, 1);
+
+      if (progressBarRef.current) {
+        const targetWidth = Math.max(26, progressRatio * 100 * 0.55);
+        progressBarRef.current.style.width = `${targetWidth}px`;
+      }
+
       if (elapsed >= DURATION) {
         setActive((prev) => (prev + 1) % slides.length);
+      } else {
+        animId = requestAnimationFrame(renderLoop);
       }
-    }, 30);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
     };
+
+    animId = requestAnimationFrame(renderLoop);
+    return () => cancelAnimationFrame(animId);
   }, [active]);
 
   return (
     <>
       {/* ──────────────────────────────────────────────────────────
           1. MOBILE VIEW (md:hidden)
-          පිරිසිදු, ආකර්ෂණීය Curved Architecture එකක් සහිත Mobile Design එක
+          120FPS GPU Enabled - Smooth & Zero Lag
       ────────────────────────────────────────────────────────── */}
-      <div className="block md:hidden bg-[#040e07] text-white pt-24 pb-12 px-4 relative overflow-hidden font-sans min-h-screen flex flex-col justify-between">
+      <div className="block md:hidden bg-[#040e07] text-white pt-24 pb-12 px-4 relative overflow-hidden font-sans min-h-screen flex flex-col justify-between transform-gpu">
         
-        {/* Soft Ambient Curved Glowing Blobs */}
-        <div className="absolute -top-16 -left-16 w-64 h-64 bg-[#10B981]/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 -right-16 w-64 h-64 bg-[#E0C37B]/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Soft Ambient Blobs */}
+        <div className="absolute -top-16 -left-16 w-64 h-64 bg-[#10B981]/15 rounded-full blur-3xl pointer-events-none transform-gpu" />
+        <div className="absolute top-1/2 -right-16 w-64 h-64 bg-[#E0C37B]/10 rounded-full blur-3xl pointer-events-none transform-gpu" />
 
         <div className="relative z-10 space-y-5">
           {/* 1. Mobile Center Logo */}
           <div className="flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full border-2 border-[#E0C37B] bg-[#020a05] shadow-[0_0_25px_rgba(224,195,123,0.35)] flex items-center justify-center overflow-hidden mb-2">
+            <div className="w-20 h-20 rounded-full border-2 border-[#E0C37B] bg-[#020a05] shadow-[0_0_25px_rgba(224,195,123,0.35)] flex items-center justify-center overflow-hidden mb-2 transform-gpu">
               <img
                 src="https://res.cloudinary.com/n911ylla/image/upload/q_auto/KRA70oqBWoSNJ4mtw41dxA1npgdd0kPA4dMmELMo34N0h6JCCR6B3JiV24oZEutt8AOccQs3_s160-c-k-c0x00ffffff-no-rj.jpg"
                 alt="School Emblem"
@@ -99,26 +107,31 @@ export default function HeroSection() {
             </h1>
           </div>
 
-          {/* 3. Mobile Dedicated Curved Photo Showcase Frame (Under Title) */}
+          {/* 3. Mobile Dedicated Showcase Frame (GPU Optimized) */}
           <div className="relative mx-auto w-full max-w-sm">
-            <div className="w-full h-56 rounded-[2.5rem] bg-gradient-to-tr from-[#065F46] via-[#10B981] to-[#E0C37B] p-1.5 shadow-2xl relative overflow-hidden">
+            <div className="w-full h-56 rounded-[2.5rem] bg-gradient-to-tr from-[#065F46] via-[#10B981] to-[#E0C37B] p-1.5 shadow-2xl relative overflow-hidden transform-gpu">
               <div className="w-full h-full rounded-[2.2rem] bg-slate-900 overflow-hidden relative">
                 {slides.map((s, idx) => (
                   <div
                     key={idx}
-                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                      idx === active ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
+                    className={`absolute inset-0 transition-opacity duration-700 ease-out transform-gpu ${
+                      idx === active ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
                     }`}
+                    style={{
+                      transform: idx === active ? "translate3d(0,0,0) scale(1)" : "translate3d(0,0,0) scale(1.04)",
+                      backfaceVisibility: "hidden",
+                    }}
                   >
                     <img
                       src={s.url}
                       alt={s.label}
                       className="w-full h-full object-cover object-center"
+                      loading={idx === 0 ? "eager" : "lazy"}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
                     
                     {/* Caption Overlay */}
-                    <div className="absolute bottom-3 left-4 right-4 text-white">
+                    <div className="absolute bottom-3 left-4 right-4 text-white pointer-events-none">
                       <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#F5CE68] text-slate-950 inline-block mb-1">
                         Aththadassi kv
                       </span>
@@ -130,7 +143,7 @@ export default function HeroSection() {
                 ))}
 
                 {/* Mobile Slider Indicator Dots */}
-                <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-black/50 px-2.5 py-1 rounded-full backdrop-blur-sm">
+                <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-black/60 px-2.5 py-1 rounded-full backdrop-blur-md">
                   {slides.map((_, i) => (
                     <button
                       key={i}
@@ -146,18 +159,18 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* 4. Mobile Description Card with Curved Border */}
-          <div className="bg-[#020d06]/80 p-3.5 rounded-2xl border border-white/10 shadow-lg text-center backdrop-blur-md">
+          {/* 4. Mobile Description Card */}
+          <div className="bg-[#020d06]/85 p-3.5 rounded-2xl border border-white/10 shadow-lg text-center backdrop-blur-md">
             <p className="m-0 text-[#E2ECE5] text-xs leading-relaxed font-normal">
               “මානිවතන අභික්කම” යන අපගේ ආදර්ශ පාඨය පෙරදැරි කරගෙන, දැනුමෙන්, හැකියාවෙන් සහ යහපත් ගුණාංගවලින් පිරිපුන් අනාගත පරපුරක් ගොඩනැගීම සඳහා අපි එක්ව ඉදිරියට යමු.
             </p>
           </div>
 
-          {/* 5. Mobile CTA Action Buttons */}
+          {/* 5. Mobile CTA Buttons */}
           <div className="flex items-center gap-2.5 pt-1">
             <Link
               href="/about"
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-full bg-gradient-to-r from-[#E2BC6B] to-[#C39947] text-[#050F08] text-xs font-black shadow-lg"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-full bg-gradient-to-r from-[#E2BC6B] to-[#C39947] text-[#050F08] text-xs font-black shadow-lg active:scale-95 transition-transform"
             >
               <span>අපේ පාසල ගැන</span>
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden>
@@ -167,7 +180,7 @@ export default function HeroSection() {
 
             <Link
               href="/contact"
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-full bg-[#020d06]/90 text-white text-xs font-bold border border-[#E0C37B]/60 shadow-md backdrop-blur-md"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-full bg-[#020d06]/90 text-white text-xs font-bold border border-[#E0C37B]/60 shadow-md backdrop-blur-md active:scale-95 transition-transform"
             >
               <span>විමසීම්</span>
             </Link>
@@ -190,7 +203,7 @@ export default function HeroSection() {
             ))}
           </div>
 
-          {/* 7. Mobile Stats Grid: 4 columns in one line */}
+          {/* 7. Mobile Stats Grid */}
           <div className="grid grid-cols-4 gap-1.5 pt-3 border-t border-white/10 text-center">
             {stats.map((s, i) => (
               <div key={i} className="p-1.5 rounded-xl bg-white/5 border border-white/5">
@@ -205,9 +218,9 @@ export default function HeroSection() {
 
       {/* ──────────────────────────────────────────────────────────
           2. PC & TABLET VIEW (hidden md:flex)
-          ඔබ ලබා දුන් මුල් PC Code එකේ කිසිදු වෙනසක් සිදු කර නැත
+          Smooth 120Hz Transition
       ────────────────────────────────────────────────────────── */}
-      <div className="hidden md:flex flex-col min-h-screen relative overflow-hidden font-sans">
+      <div className="hidden md:flex flex-col min-h-screen relative overflow-hidden font-sans transform-gpu">
         <section
           style={{
             minHeight: "100vh",
@@ -228,14 +241,17 @@ export default function HeroSection() {
                 style={{
                   position: "absolute",
                   inset: 0,
-                  transition: "opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1), transform 6s ease-out",
+                  transition: "opacity 1.2s cubic-bezier(0.25, 1, 0.5, 1), transform 5.5s linear",
                   opacity: i === active ? 1 : 0,
-                  transform: i === active ? "scale(1.02)" : "scale(1)",
+                  transform: i === active ? "translate3d(0,0,0) scale(1.025)" : "translate3d(0,0,0) scale(1)",
+                  willChange: "transform, opacity",
+                  backfaceVisibility: "hidden",
                 }}
               >
                 <img
                   src={s.url}
                   alt={s.label}
+                  loading={i === 0 ? "eager" : "lazy"}
                   style={{
                     width: "100%",
                     height: "100%",
@@ -310,14 +326,15 @@ export default function HeroSection() {
                 overflow: "hidden",
                 marginBottom: 14,
                 backdropFilter: "blur(6px)",
-                transition: "transform 0.3s ease",
+                transition: "transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)",
                 cursor: "pointer",
+                transform: "translate3d(0,0,0)",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.transform = "scale(1.05)";
+                (e.currentTarget as HTMLDivElement).style.transform = "translate3d(0,0,0) scale(1.05)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
+                (e.currentTarget as HTMLDivElement).style.transform = "translate3d(0,0,0) scale(1)";
               }}
             >
               <img
@@ -513,16 +530,17 @@ export default function HeroSection() {
                   letterSpacing: "0.02em",
                   boxShadow:
                     "0 6px 24px rgba(226, 188, 107, 0.45), 0 2px 8px rgba(0, 0, 0, 0.5)",
-                  transition: "transform 0.18s ease, box-shadow 0.18s ease",
+                  transition: "transform 0.18s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.18s ease",
+                  transform: "translate3d(0,0,0)",
                 }}
                 onMouseEnter={(e) => {
                   const a = e.currentTarget as HTMLAnchorElement;
-                  a.style.transform = "scale(1.05)";
+                  a.style.transform = "translate3d(0,0,0) scale(1.05)";
                   a.style.boxShadow = "0 10px 30px rgba(226, 188, 107, 0.6)";
                 }}
                 onMouseLeave={(e) => {
                   const a = e.currentTarget as HTMLAnchorElement;
-                  a.style.transform = "scale(1)";
+                  a.style.transform = "translate3d(0,0,0) scale(1)";
                   a.style.boxShadow = "0 6px 24px rgba(226, 188, 107, 0.45)";
                 }}
               >
@@ -554,19 +572,20 @@ export default function HeroSection() {
                   border: "1.5px solid rgba(224, 195, 123, 0.55)",
                   backdropFilter: "blur(8px)",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
-                  transition: "background 0.2s, border-color 0.2s, transform 0.18s",
+                  transition: "background 0.2s, border-color 0.2s, transform 0.18s cubic-bezier(0.25, 1, 0.5, 1)",
+                  transform: "translate3d(0,0,0)",
                 }}
                 onMouseEnter={(e) => {
                   const a = e.currentTarget as HTMLAnchorElement;
                   a.style.background = "rgba(224, 195, 123, 0.2)";
                   a.style.borderColor = "#E2BC6B";
-                  a.style.transform = "scale(1.03)";
+                  a.style.transform = "translate3d(0,0,0) scale(1.03)";
                 }}
                 onMouseLeave={(e) => {
                   const a = e.currentTarget as HTMLAnchorElement;
                   a.style.background = "rgba(1, 8, 4, 0.65)";
                   a.style.borderColor = "rgba(224, 195, 123, 0.55)";
-                  a.style.transform = "scale(1)";
+                  a.style.transform = "translate3d(0,0,0) scale(1)";
                 }}
               >
                 විමසීම්
@@ -698,8 +717,8 @@ export default function HeroSection() {
                       height: 3.5,
                       borderRadius: 2,
                       background: i === active ? "#F5CE68" : "rgba(255, 255, 255, 0.35)",
-                      width: i === active ? `${Math.max(26, progress * 0.55)}px` : "20px",
-                      transition: "background 0.3s, width 0.08s linear",
+                      width: i === active ? "32px" : "18px",
+                      transition: "all 0.3s ease",
                     }}
                   />
                 ))}
