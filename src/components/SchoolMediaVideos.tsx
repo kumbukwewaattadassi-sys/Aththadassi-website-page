@@ -116,7 +116,7 @@ export default function SchoolMediaVideos() {
           </div>
 
           <a
-            href="https://youtube.com"
+            href="https://www.youtube.com/@AttadassiWebDevelopmentTeam/videos"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-600/20 transition-transform active:scale-95 shrink-0 self-start md:self-auto"
@@ -247,7 +247,7 @@ export default function SchoolMediaVideos() {
               </button>
             ) : (
               <a
-                href="https://youtube.com"
+                href="https://www.youtube.com/@AttadassiWebDevelopmentTeam/videos"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-6 py-2.5 sm:px-8 sm:py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-black transition-transform active:scale-95 shadow-md shadow-red-600/20"

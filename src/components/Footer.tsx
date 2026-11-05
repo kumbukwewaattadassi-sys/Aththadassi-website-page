@@ -87,26 +87,10 @@ export default function Footer({
           >
             <Facebook className="w-4 h-4 fill-current" />
           </a>
+          
+           
           <a
-            href="https://twitter.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Twitter"
-            className="w-9 h-9 rounded-full bg-[#064e3b] text-emerald-200 border border-emerald-600/40 flex items-center justify-center hover:bg-[#F59E0B] hover:text-slate-950 transition-all hover:-translate-y-0.5"
-          >
-            <Twitter className="w-4 h-4 fill-current" />
-          </a>
-          <a
-            href="https://instagram.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Instagram"
-            className="w-9 h-9 rounded-full bg-[#064e3b] text-emerald-200 border border-emerald-600/40 flex items-center justify-center hover:bg-[#F59E0B] hover:text-slate-950 transition-all hover:-translate-y-0.5"
-          >
-            <Instagram className="w-4 h-4" />
-          </a>
-          <a
-            href="https://youtube.com"
+            href="https://www.youtube.com/@AttadassiWebDevelopmentTeam"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="YouTube"
@@ -154,7 +138,7 @@ export default function Footer({
             &copy; 2026 Aththadassi K Vidyalaya
           </p>
           <p className="text-[10px] tracking-[0.2em] text-[#F59E0B] font-semibold uppercase">
-            Excellence in Education, Sports and Discipline
+            Made By Student Leadership President & Media Unit Captain in 2024
           </p>
         </div>
 

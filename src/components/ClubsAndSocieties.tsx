@@ -8,9 +8,8 @@ export default function ClubsAndSocieties() {
     { name: "මාධ්‍ය ඒකකය (Media Unit)", desc: "පාසල් මාධ්‍ය ජාලය, සජීවී විකාශන සහ ඡායාරූපකරණය.", icon: Camera },
     { name: "තොරතුරු තාක්ෂණ සංගමය (IT Club)", desc: "වෙබ් සංවර්ධනය, Coding, AI සහ Graphic Design පුහුණුව.", icon: Globe },
     { name: "ශිෂ්‍ය නායක මණ්ඩලය (Prefects' Guild)", desc: "නායකත්වය, විනය සහ පාසල් කළමනාකරණ කාර්යයන්.", icon: Shield },
-    { name: "ක්‍රිකට් සංචිතය (School Cricket Team)", desc: "13 න්, 15 න්, 17 න් සහ 19 න් පහළ සමස්ත ලංකා තරගාවලි.", icon: Trophy },
-    { name: "බාලදක්ෂ ව්‍යාපාරය (Scout Troop)", desc: "කඳවුරු බැඳීම, ප්‍රථමාධාර සහ සමාජ සේවා වැඩසටහන්.", icon: Activity },
-    { name: "ගුවන්විදුලි සංගමය (Radio Club)", desc: "දෛනික පාසල් ගුවන්විදුලි විකාශනය සහ නිවේදන කටයුතු.", icon: Radio },
+     
+     
   ];
 
   return (
