@@ -168,7 +168,7 @@ export default function QuizGamePage() {
 
   // Ready 3-Sec Countdown Modal State
   const [showCountdownModal, setShowCountdownModal] = useState(false);
-  const [startCount, setStartCount] = useState(3);
+  const [startCount, setStartCount] = useState(7);
 
   // Birth Date Selectors
   const [birthYear, setBirthYear] = useState('2012');
@@ -537,7 +537,7 @@ export default function QuizGamePage() {
         setLoading(false);
 
         setShowCountdownModal(true);
-        setStartCount(3);
+        setStartCount(7);
 
         const countdownInterval = setInterval(() => {
           setStartCount((prev) => {
