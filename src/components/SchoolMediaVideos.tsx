@@ -142,7 +142,7 @@ export default function SchoolMediaVideos() {
           </div>
         )}
 
-        {/* ZIG-ZAG SHOWCASE: Mobile එකෙත් Compact horizontal row එකක් ලෙස වම්/දකුණු මාරු වේ */}
+        {/* Video Cards Showcase (Mobile & PC Both Responsive) */}
         {!isLoading && visibleVideos.length > 0 && (
           <div className="space-y-4 sm:space-y-8">
             {visibleVideos.map((video, index) => {
@@ -151,16 +151,18 @@ export default function SchoolMediaVideos() {
               return (
                 <div
                   key={video.id}
-                  className="flex flex-row items-center gap-3 sm:gap-8 p-3 sm:p-6 rounded-2xl sm:rounded-[2.5rem] bg-slate-50/80 border border-slate-200/80 hover:bg-white hover:border-slate-300 hover:shadow-lg transition-all duration-200 will-change-transform"
+                  className="flex flex-row items-center gap-3 sm:gap-8 p-3 sm:p-6 rounded-2xl sm:rounded-[2.5rem] bg-slate-50/80 border border-slate-200/80 hover:bg-white hover:border-slate-300 hover:shadow-md transition-all duration-200 transform-gpu"
                 >
-                  
-                  {/* Thumbnail Frame (Mobile: 42% width, Desktop: 40% width) */}
+                  {/* YouTube Style Glowing/Breathing Thumbnail Frame - Mobile & PC දෙකටම */}
                   <div
                     onClick={() => setActiveVideo(video)}
                     className={`w-[42%] sm:w-[40%] shrink-0 relative aspect-video rounded-xl sm:rounded-3xl overflow-hidden bg-slate-900 shadow-sm cursor-pointer group ${
                       isEven ? 'order-1' : 'order-2'
                     }`}
                   >
+                    {/* නිවී නිවී එන සජීවී Glow / Breathing Pulse Frame එක */}
+                    <div className="absolute inset-0 rounded-xl sm:rounded-3xl ring-2 sm:ring-4 ring-red-500/75 animate-pulse pointer-events-none z-10" />
+
                     <img
                       src={video.thumbnail}
                       alt={video.title}
@@ -169,17 +171,17 @@ export default function SchoolMediaVideos() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
 
-                    <span className="absolute bottom-1 right-1 sm:bottom-2.5 sm:right-2.5 bg-black/85 text-white font-mono text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded font-bold">
+                    <span className="absolute bottom-1 right-1 sm:bottom-2.5 sm:right-2.5 bg-black/85 text-white font-mono text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded font-bold z-20">
                       {video.duration}
                     </span>
 
-                    <span className="hidden sm:inline-block absolute top-2.5 left-2.5 bg-[#065F46]/90 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                    <span className="hidden sm:inline-block absolute top-2.5 left-2.5 bg-[#065F46]/90 text-white text-[10px] px-2 py-0.5 rounded-full font-bold z-20">
                       {video.category}
                     </span>
 
                     {/* Centered Play Button */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                    <div className="absolute inset-0 flex items-center justify-center z-20">
+                      <div className="w-7 h-7 sm:w-12 sm:h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                         <Play className="w-3 h-3 sm:w-5 sm:h-5 fill-white ml-0.5" />
                       </div>
                     </div>
@@ -194,7 +196,9 @@ export default function SchoolMediaVideos() {
                       <span className="text-[9px] sm:text-[11px] font-black uppercase text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100 truncate">
                         {index === 0 ? "🔥 Latest" : `Video #${index + 1}`}
                       </span>
-                      <span className="text-[9px] sm:text-xs text-slate-400 font-medium truncate">• {video.views}</span>
+                      <span className="text-[9px] sm:text-xs text-slate-400 font-medium truncate">
+                        {video.views}
+                      </span>
                     </div>
 
                     <h3 
@@ -204,7 +208,6 @@ export default function SchoolMediaVideos() {
                       {video.title}
                     </h3>
 
-                    {/* Description: Mobile එකේ පේළි 2කට සීමා වේ */}
                     <p className="text-[10px] sm:text-xs md:text-sm text-slate-600 font-medium leading-relaxed line-clamp-2 sm:line-clamp-3">
                       {video.description}
                     </p>
@@ -234,7 +237,7 @@ export default function SchoolMediaVideos() {
           </div>
         )}
 
-        {/* SEE MORE VIDEOS BUTTON */}
+        {/* See More Videos Button */}
         {!isLoading && videoList.length > 3 && (
           <div className="mt-8 sm:mt-12 text-center">
             {!showAllVideos ? (
@@ -262,21 +265,15 @@ export default function SchoolMediaVideos() {
 
       </div>
 
-      {/* 144FPS HARDWARE ACCELERATED CINEMA MODAL PLAYER */}
+      {/* ULTRA-SMOOTH CINEMA MODAL PLAYER */}
       {activeVideo && (
         <div 
           onClick={() => setActiveVideo(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-sm animate-in fade-in duration-150 transform-gpu"
-          style={{ willChange: "opacity" }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/95 transform-gpu"
         >
           <div 
             onClick={(e) => e.stopPropagation()} 
             className="relative w-full max-w-4xl flex flex-col gap-2.5 sm:gap-4 text-white transform-gpu"
-            style={{ 
-              willChange: "transform, opacity",
-              transform: "translateZ(0)",
-              backfaceVisibility: "hidden"
-            }}
           >
             {/* Modal Top Control */}
             <div className="flex items-center justify-between px-1">
@@ -289,7 +286,7 @@ export default function SchoolMediaVideos() {
 
               <button
                 onClick={() => setActiveVideo(null)}
-                className="flex items-center gap-1 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md transition-transform active:scale-95 border border-white/10"
+                className="flex items-center gap-1 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-transform active:scale-95 border border-white/10"
               >
                 <span>වසන්න</span>
                 <X className="w-3.5 h-3.5" />
@@ -297,14 +294,7 @@ export default function SchoolMediaVideos() {
             </div>
 
             {/* Zero-Lag YouTube Frame Container */}
-            <div 
-              className="relative w-full aspect-video rounded-xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/15 bg-black transform-gpu"
-              style={{ 
-                transform: "translate3d(0, 0, 0)",
-                contain: "paint layout",
-                willChange: "contents"
-              }}
-            >
+            <div className="relative w-full aspect-video rounded-xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/15 bg-black transform-gpu">
               <iframe
                 className="w-full h-full border-0"
                 src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
@@ -316,7 +306,7 @@ export default function SchoolMediaVideos() {
             </div>
 
             {/* Modal Footer Bar */}
-            <div className="bg-[#0b1f19]/90 border border-emerald-800/40 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xl">
+            <div className="bg-[#0b1f19] border border-emerald-800/40 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xl">
               <div className="space-y-1 max-w-xl">
                 <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-1">
                   {activeVideo.title}

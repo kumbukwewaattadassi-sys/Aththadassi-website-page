@@ -55,7 +55,7 @@ export default function CombinedPrincipalAndNews() {
 
   return (
     <section id="news-section" className="py-8 md:py-24 bg-slate-50 relative overflow-hidden">
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-gradient-to-r from-emerald-100/40 to-amber-100/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="hidden md:block absolute top-10 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-gradient-to-r from-emerald-100/40 to-amber-100/30 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         

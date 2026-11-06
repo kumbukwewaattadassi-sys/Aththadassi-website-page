@@ -19,78 +19,44 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 30);
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 25);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
     handleScroll();
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
     <header
+      className={`fixed top-0 left-0 right-0 z-[100] transform-gpu transition-colors duration-200 ${
+        scrolled
+          ? "bg-[#020804] border-b border-[#C1A260]/30 shadow-md"
+          : "bg-gradient-to-b from-[#010603]/85 via-[#010603]/40 to-transparent border-b border-transparent"
+      }`}
       style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        padding: scrolled ? "10px 24px" : "18px 32px",
-        transition: "padding 0.3s ease, background 0.3s ease, box-shadow 0.3s ease",
-        background: scrolled
-          ? "rgba(2, 8, 4, 0.88)"
-          : "linear-gradient(180deg, rgba(1, 6, 3, 0.72) 0%, rgba(1, 6, 3, 0.25) 70%, transparent 100%)",
-        backdropFilter: scrolled ? "blur(18px)" : "blur(6px)",
-        borderBottom: scrolled
-          ? "1px solid rgba(193, 162, 96, 0.22)"
-          : "1px solid transparent",
-        boxShadow: scrolled ? "0 12px 34px rgba(0, 0, 0, 0.45)" : "none",
+        padding: "10px 16px",
       }}
     >
-      <nav
-        style={{
-          maxWidth: 1280,
-          margin: "0 auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 20,
-        }}
-      >
+      <nav className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         {/* ── Circular Logo + School Name ── */}
         <Link
           href="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            textDecoration: "none",
-            minWidth: 0,
-          }}
+          className="flex items-center gap-3 no-underline min-w-0"
         >
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              flexShrink: 0,
-              borderRadius: "50%",
-              border: "2px solid #C1A260",
-              background: "rgba(2, 10, 5, 0.8)",
-              boxShadow:
-                "0 0 24px rgba(193, 162, 96, 0.32), 0 8px 20px rgba(0, 0, 0, 0.55)",
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full border-2 border-[#C1A260] bg-[#020a05] shadow-xs flex-shrink-0 flex items-center justify-center overflow-hidden">
             <img
               src={LOGO_URL}
               alt="පාසල් ලාංඡනය"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                display: "block",
-              }}
+              className="w-full h-full object-cover block"
               onError={(e) => {
                 const img = e.currentTarget;
                 img.style.display = "none";
@@ -100,67 +66,23 @@ export default function Navbar() {
             />
           </div>
 
-          <div style={{ minWidth: 0 }}>
-            <p
-              style={{
-                margin: 0,
-                color: "#FFFFFF",
-                fontWeight: 800,
-                fontSize: "clamp(0.82rem, 1.6vw, 1rem)",
-                lineHeight: 1.25,
-                textShadow: "0 2px 12px rgba(0, 0, 0, 0.85)",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
+          <div className="min-w-0">
+            <p className="m-0 text-white font-extrabold text-[13px] sm:text-base leading-tight truncate">
               කුඹුක්වැව අත්ථදස්සි
             </p>
-            <p
-              style={{
-                margin: 0,
-                color: "#E0C37B",
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-              }}
-            >
+            <p className="m-0 text-[#E0C37B] text-[9.5px] font-bold tracking-wider uppercase mt-0.5">
               Junior School • Est. 1963
             </p>
           </div>
         </Link>
 
-        {/* ── Desktop Links ── */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
-          className="navbar-desktop-links"
-        >
+        {/* ── Desktop Links (hidden on mobile/tablet) ── */}
+        <div className="hidden lg:flex items-center gap-1.5">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 100,
-                color: "rgba(255, 255, 255, 0.82)",
-                fontSize: 13.5,
-                fontWeight: 600,
-                textDecoration: "none",
-                transition: "color 0.2s ease, background 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#E5C16C";
-                e.currentTarget.style.background = "rgba(193, 162, 96, 0.12)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "rgba(255, 255, 255, 0.82)";
-                e.currentTarget.style.background = "transparent";
-              }}
+              className="px-3.5 py-2 rounded-full text-white/85 text-[13.5px] font-semibold no-underline hover:text-[#E5C16C] hover:bg-[#C1A260]/10 transition-colors"
             >
               {link.label}
             </Link>
@@ -168,88 +90,35 @@ export default function Navbar() {
 
           <Link
             href="/admissions"
-            style={{
-              marginLeft: 10,
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "11px 22px",
-              borderRadius: 100,
-              background: "linear-gradient(135deg, #D4B26F 0%, #B8934C 100%)",
-              color: "#050F08",
-              fontSize: 13.5,
-              fontWeight: 800,
-              textDecoration: "none",
-              boxShadow: "0 8px 22px rgba(193, 162, 96, 0.32)",
-              whiteSpace: "nowrap",
-              transition: "transform 0.18s ease, box-shadow 0.18s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "scale(1.04)";
-              e.currentTarget.style.boxShadow =
-                "0 12px 28px rgba(193, 162, 96, 0.48)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.boxShadow =
-                "0 8px 22px rgba(193, 162, 96, 0.32)";
-            }}
+            className="ml-2 inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-[#D4B26F] to-[#B8934C] text-[#050F08] text-[13.5px] font-extrabold no-underline shadow-sm hover:scale-105 active:scale-95 transition-transform"
           >
             ලියාපදිංචිය 2026
           </Link>
         </div>
 
-        {/* ── Mobile Menu Button ── */}
+        {/* ── Mobile Menu Hamburger Button ── */}
         <button
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Menu"
-          style={{
-            display: "none",
-            width: 46,
-            height: 46,
-            borderRadius: "50%",
-            border: "1px solid rgba(193, 162, 96, 0.45)",
-            background: "rgba(2, 10, 5, 0.65)",
-            color: "#E5C16C",
-            fontSize: 20,
-            cursor: "pointer",
-          }}
-          className="navbar-mobile-button"
+          className="lg:hidden w-10 h-10 rounded-full border border-[#C1A260]/40 bg-[#020a05]/90 text-[#E5C16C] text-lg flex items-center justify-center cursor-pointer active:scale-90 transition-transform"
         >
           {menuOpen ? "✕" : "☰"}
         </button>
       </nav>
 
-      {/* ── Mobile Dropdown ── */}
+      {/* ── Mobile Dropdown Menu (Lag-free Solid Layer) ── */}
       <div
-        style={{
-          maxHeight: menuOpen ? 420 : 0,
-          opacity: menuOpen ? 1 : 0,
-          overflow: "hidden",
-          transition: "max-height 0.35s ease, opacity 0.25s ease",
-          marginTop: menuOpen ? 14 : 0,
-          borderRadius: 18,
-          background: "rgba(2, 8, 4, 0.96)",
-          border: "1px solid rgba(193, 162, 96, 0.25)",
-          boxShadow: "0 20px 45px rgba(0, 0, 0, 0.55)",
-        }}
-        className="navbar-mobile-menu"
+        className={`lg:hidden transition-all duration-200 overflow-hidden ${
+          menuOpen ? "max-h-[380px] opacity-100 mt-3" : "max-h-0 opacity-0 pointer-events-none"
+        } rounded-2xl bg-[#020804] border border-[#C1A260]/30 shadow-xl`}
       >
-        <div style={{ padding: "14px 16px" }}>
+        <div className="p-3 space-y-1">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              style={{
-                display: "block",
-                padding: "13px 16px",
-                borderRadius: 12,
-                color: "rgba(255, 255, 255, 0.85)",
-                fontSize: 14.5,
-                fontWeight: 600,
-                textDecoration: "none",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.07)",
-              }}
+              className="block px-4 py-2.5 rounded-xl text-white/90 text-sm font-semibold no-underline active:bg-white/10 border-b border-white/5"
             >
               {link.label}
             </Link>
@@ -258,43 +127,12 @@ export default function Navbar() {
           <Link
             href="/admissions"
             onClick={() => setMenuOpen(false)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginTop: 14,
-              padding: "14px 18px",
-              borderRadius: 100,
-              background: "linear-gradient(135deg, #D4B26F 0%, #B8934C 100%)",
-              color: "#050F08",
-              fontSize: 14,
-              fontWeight: 800,
-              textDecoration: "none",
-            }}
+            className="flex items-center justify-center mt-2.5 py-3 rounded-full bg-gradient-to-r from-[#D4B26F] to-[#B8934C] text-[#050F08] text-sm font-extrabold no-underline active:scale-95 transition-transform"
           >
             ලියාපදිංචිය 2026
           </Link>
         </div>
       </div>
-
-      <style jsx global>{`
-        @media (max-width: 1024px) {
-          .navbar-desktop-links {
-            display: none !important;
-          }
-          .navbar-mobile-button {
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-          }
-        }
-
-        @media (max-width: 480px) {
-          header {
-            padding: 10px 14px !important;
-          }
-        }
-      `}</style>
     </header>
   );
 }
