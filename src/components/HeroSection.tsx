@@ -28,28 +28,29 @@ const stats = [
 export default function HeroSection() {
   const [active, setActive] = useState(0);
 
-  // Smooth Slide Switch
   useEffect(() => {
-    const timer = setInterval(() => {
-      setActive((prev) => (prev + 1) % slides.length);
-    }, 4500);
-    return () => clearInterval(timer);
+    if (typeof window !== "undefined" && window.innerWidth >= 768) {
+      const timer = setInterval(() => {
+        setActive((prev) => (prev + 1) % slides.length);
+      }, 4500);
+      return () => clearInterval(timer);
+    }
   }, []);
 
   return (
     <>
       {/* ──────────────────────────────────────────────────────────
-          1. REFINED FRAMELESS MOBILE VIEW (md:hidden)
+          1. FRESH LIGHT GREEN MOBILE VIEW (md:hidden)
+          - Light Emerald (#F0FDF4) Theme with zero lag
       ────────────────────────────────────────────────────────── */}
-      <div className="block md:hidden bg-[#030a05] text-white pt-20 pb-8 px-4 font-sans relative overflow-hidden">
-        
-        <div className="flex flex-col gap-5 relative z-10">
+      <div className="block md:hidden bg-[#F0FDF4] text-slate-800 pt-20 pb-8 px-4 font-sans relative transform-gpu">
+        <div className="flex flex-col gap-4 relative z-10">
           
-          {/* 1. Header Information (Emblem, Name, Motto, Title) */}
-          <div className="flex flex-col items-center text-center space-y-2.5 pt-2">
+          {/* Header Information */}
+          <div className="flex flex-col items-center text-center space-y-2 pt-2">
             
             {/* Center Logo */}
-            <div className="w-20 h-20 rounded-full border-2 border-[#E0C37B] bg-[#020a05] shadow-[0_0_20px_rgba(224,195,123,0.35)] flex items-center justify-center overflow-hidden">
+            <div className="w-20 h-20 rounded-full border-2 border-emerald-600 bg-white flex items-center justify-center overflow-hidden shadow-sm">
               <img
                 src="https://res.cloudinary.com/n911ylla/image/upload/q_auto/KRA70oqBWoSNJ4mtw41dxA1npgdd0kPA4dMmELMo34N0h6JCCR6B3JiV24oZEutt8AOccQs3_s160-c-k-c0x00ffffff-no-rj.jpg"
                 alt="School Emblem"
@@ -66,59 +67,51 @@ export default function HeroSection() {
 
             {/* School Name & Founded */}
             <div>
-              <h2 className="text-white font-extrabold text-sm tracking-wide">
+              <h2 className="text-emerald-950 font-black text-sm tracking-wide">
                 පු/කුඹුක්වැව අත්ථදස්සි කනිෂ්ඨ විද්‍යාලය
               </h2>
-              <p className="text-[#E0C37B] text-[10px] font-semibold mt-0.5 tracking-wider">
+              <p className="text-emerald-700 text-[10px] font-bold mt-0.5 tracking-wider">
                 පාසල් ආරම්භය :- 1963/ 01/ 02
               </p>
             </div>
 
             {/* Motto Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E0C37B]/10 border border-[#E0C37B]/40 text-[#F6DE95] text-[10.5px] font-bold tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 text-[10px] font-black tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
               &quot; මානිවතන අභික්කම &quot;
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl font-black leading-tight text-white tracking-tight pt-1">
+            <h1 className="text-2xl font-black leading-tight text-slate-900 tracking-tight pt-1">
               දැනුමෙන් සන්නද්ධ <br />
-              <span className="text-[#F5CE68]">විශිෂ්ටතම පරපුරක්</span>
+              <span className="text-emerald-700">විශිෂ්ටතම පරපුරක්</span>
             </h1>
           </div>
 
-          {/* 2. Frameless Clean Photo Slider (කිසිදු ඝන frame එකක් නොමැතිව පිරිසිදුව) */}
-          <div className="relative w-full aspect-[16/10] max-h-64 rounded-3xl overflow-hidden shadow-2xl bg-[#08170c]">
-            {slides.map((s, idx) => (
-              <img
-                key={idx}
-                src={s.url}
-                alt={s.label}
-                loading={idx === 0 ? "eager" : "lazy"}
-                className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-700 ease-in-out ${
-                  idx === active ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
-                }`}
-              />
-            ))}
+          {/* Photo Banner */}
+          <div className="relative w-full aspect-[16/10] max-h-56 rounded-2xl overflow-hidden shadow-sm bg-emerald-100 border border-emerald-200">
+            <img
+              src={slides[active].url}
+              alt={slides[active].label}
+              loading="eager"
+              className="w-full h-full object-cover object-center"
+            />
+            
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent pointer-events-none" />
 
-            {/* Subtle Gradient for Bottom Details */}
-            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
-
-            {/* Slide Label Badge */}
-            <div className="absolute bottom-3 left-4 z-20">
-              <span className="text-[9.5px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-black/60 text-[#F5CE68] border border-white/20 backdrop-blur-sm">
+            <div className="absolute bottom-2.5 left-3">
+              <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/95 text-emerald-900 border border-emerald-200 shadow-xs">
                 Aththadassi kv • {slides[active].label}
               </span>
             </div>
 
-            {/* Indicator Dots */}
-            <div className="absolute bottom-3 right-4 z-20 flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-full backdrop-blur-sm border border-white/20">
+            <div className="absolute bottom-2.5 right-3 flex items-center gap-1 bg-black/60 px-2 py-1 rounded-md">
               {slides.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setActive(i)}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === active ? "w-5 bg-[#F5CE68]" : "w-1.5 bg-white/40"
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === active ? "w-4 bg-amber-400" : "w-1.5 bg-white/50"
                   }`}
                   aria-label={`Slide ${i + 1}`}
                 />
@@ -126,57 +119,42 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* 3. Description Card */}
-          <div className="bg-[#06150b] p-4 rounded-2xl border border-white/10 text-center shadow-md">
-            <p className="m-0 text-[#E2ECE5] text-[11.5px] leading-relaxed font-normal">
+          {/* Description Card */}
+          <div className="bg-white p-3.5 rounded-2xl border border-emerald-100 text-center shadow-xs">
+            <p className="m-0 text-slate-700 text-[11px] leading-relaxed font-medium">
               “මානිවතන අභික්කම” යන අපගේ ආදර්ශ පාඨය පෙරදැරි කරගෙන, දැනුමෙන්, හැකියාවෙන් සහ යහපත් ගුණාංගවලින් පිරිපුන් අනාගත පරපුරක් ගොඩනැගීම සඳහා අපි එක්ව ඉදිරියට යමු.
             </p>
           </div>
 
-          {/* 4. Action Buttons */}
-          <div className="flex items-center gap-2.5">
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
             <Link
               href="/about"
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-full bg-gradient-to-r from-[#E2BC6B] to-[#C39947] text-[#050F08] text-xs font-black shadow-lg active:scale-95 transition-transform"
+              className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-xs active:scale-95 transition-all"
             >
               <span>අපේ පාසල ගැන</span>
-              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden>
-                <path d="M2 7h10M7 2l5 5-5 5" stroke="#050F08" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                <path d="M2 7h10M7 2l5 5-5 5" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </Link>
 
             <Link
               href="/contact"
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-full bg-[#06150b] text-white text-xs font-bold border border-[#E0C37B]/60 shadow-md active:scale-95 transition-transform"
+              className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 px-3 rounded-xl bg-white text-emerald-900 text-xs font-bold border border-emerald-200 shadow-xs active:scale-95 transition-all"
             >
               <span>විමසීම්</span>
             </Link>
           </div>
 
-          {/* 5. Trust Badges */}
-          <div className="flex items-center gap-1.5 justify-center flex-wrap pt-0.5">
-            {[
-              { icon: "🏅", label: "Junior College" },
-              { icon: "✅", label: "Skills Development" },
-              { icon: "📋", label: "Teaching Excellence" },
-            ].map((b, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#06150b] border border-white/10 text-[9.5px] text-[#E2ECE5] font-medium"
-              >
-                <span>{b.icon}</span>
-                <span>{b.label}</span>
-              </div>
-            ))}
-          </div>
+          
 
-          {/* 6. Stats Grid */}
-          <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-white/10 text-center">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-emerald-200/80 text-center">
             {stats.map((s, i) => (
-              <div key={i} className="p-2 rounded-xl bg-white/5 border border-white/5">
-                <p className="m-0 text-sm font-black text-white leading-none">{s.value}</p>
-                <p className="m-0 mt-1 text-[9px] font-bold text-[#F5CE68] leading-tight">{s.sinhala}</p>
-                <p className="m-0 text-[7px] text-white/40 uppercase">{s.english}</p>
+              <div key={i} className="p-2 rounded-xl bg-white border border-emerald-100 shadow-2xs">
+                <p className="m-0 text-xs font-black text-slate-900 leading-none">{s.value}</p>
+                <p className="m-0 mt-1 text-[8.5px] font-bold text-emerald-700 leading-tight">{s.sinhala}</p>
+                <p className="m-0 text-[7px] text-slate-400 uppercase">{s.english}</p>
               </div>
             ))}
           </div>
@@ -185,7 +163,7 @@ export default function HeroSection() {
       </div>
 
       {/* ──────────────────────────────────────────────────────────
-          2. PC & TABLET VIEW (hidden md:flex) - කිසිදු වෙනසක් කර නොමැත
+          2. PC & TABLET VIEW (hidden md:flex) - 100% මුල් ආකාරයටම පවතී
       ────────────────────────────────────────────────────────── */}
       <div className="hidden md:flex flex-col min-h-screen relative overflow-hidden font-sans">
         <section
