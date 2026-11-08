@@ -143,40 +143,44 @@ export default function CombinedPrincipalAndNews() {
               </div>
             </div>
 
-            {/* 1. MOBILE ONLY: 3 BALANCED CARDS IN 1 ROW (grid-cols-3) */}
-            <div className="grid grid-cols-3 gap-2 lg:hidden w-full">
-              {newsList.slice(0, 3).map((item) => (
+            {/* 1. MOBILE ONLY: 2 BALANCED CARDS IN 1 ROW (grid-cols-2) */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:hidden w-full">
+              {newsList.slice(0, 2).map((item) => (
                 <Link
                   key={item.id}
                   href={`/news/${item.id}`}
-                  className="bg-white rounded-xl p-2 border border-slate-200/90 shadow-2xs flex flex-col justify-between active:scale-95 transition-transform"
+                  className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs flex flex-col justify-between active:scale-[0.98] transition-transform"
                 >
-                  <div className="space-y-1.5">
-                    <div className="w-full aspect-[4/3] rounded-lg overflow-hidden relative bg-slate-100 border border-slate-200">
+                  <div className="space-y-2">
+                    {/* Thumbnail Image */}
+                    <div className="w-full aspect-[16/10] rounded-xl overflow-hidden relative bg-slate-100 border border-slate-200">
                       <img
                         src={item.image}
                         alt={item.title}
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
-                      <div className="absolute top-1 left-1 bg-slate-900/85 text-[7px] text-amber-300 px-1 py-0.2 rounded font-semibold whitespace-nowrap">
+                      <div className="absolute top-1.5 left-1.5 bg-slate-900/85 text-[8px] text-amber-300 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap">
                         {item.category}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-0.5 text-[8.5px] text-slate-400 font-medium">
+                    {/* Date */}
+                    <div className="flex items-center gap-1 text-[9.5px] text-slate-400 font-medium">
                       <Calendar className="w-2.5 h-2.5 text-[#F59E0B] shrink-0" />
                       <span className="truncate">{item.date}</span>
                     </div>
 
-                    <h4 className="text-[10px] font-bold text-slate-900 line-clamp-2 leading-tight">
+                    {/* Title */}
+                    <h4 className="text-[11px] font-bold text-slate-900 line-clamp-2 leading-snug">
                       {item.title}
                     </h4>
                   </div>
 
-                  <div className="pt-1.5 mt-1 border-t border-slate-100 flex items-center justify-between text-[9px] font-bold text-[#065F46]">
+                  {/* Read More Button */}
+                  <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-[#065F46]">
                     <span>කියවන්න</span>
-                    <ChevronRight className="w-2.5 h-2.5 shrink-0" />
+                    <ChevronRight className="w-3 h-3 shrink-0" />
                   </div>
                 </Link>
               ))}
