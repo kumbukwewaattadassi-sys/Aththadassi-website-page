@@ -13,17 +13,24 @@ import {
   Eye, 
   EyeOff, 
   X,
-  Loader2 
+  Loader2,
+  ExternalLink,
+  Images,
+  Link as LinkIcon
 } from 'lucide-react';
 
 interface NewsItem {
   id: string;
   title: string;
+  subtitle?: string;
   category: string;
   author: string;
   date: string;
   image_url: string;
   description: string;
+  link_url?: string;
+  link_label?: string;
+  gallery?: string[] | string;
   status: 'published' | 'draft';
 }
 
@@ -52,14 +59,18 @@ export default function AdminPage() {
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
 
-  // News Form
+  // News Form (Updated with Subtitle, Link & Gallery)
   const [newsForm, setNewsForm] = useState({
     title: '',
+    subtitle: '',
     category: 'ක්‍රීඩා',
     author: 'Media Unit',
     date: new Date().toLocaleDateString('si-LK', { year: 'numeric', month: 'long', day: 'numeric' }),
     image_url: '',
     description: '',
+    link_url: '',
+    link_label: 'වැඩිදුර තොරතුරු මෙතැනින්',
+    gallery: '', // Comma-separated URLs
     status: 'published' as 'published' | 'draft',
   });
 
@@ -77,14 +88,12 @@ export default function AdminPage() {
   // 1. Fetch All Data
   const loadData = async () => {
     setFetching(true);
-    // Fetch News
     const { data: nData } = await supabase
       .from('news')
       .select('*')
       .order('created_at', { ascending: false });
     if (nData) setNewsList(nData);
 
-    // Fetch Videos
     const { data: vData } = await supabase
       .from('youtube_videos')
       .select('*')
@@ -104,11 +113,32 @@ export default function AdminPage() {
     setLoading(true);
     setMessage(null);
 
+    // Gallery string එක array එකක් බවට හැරවීම
+    const parsedGallery = newsForm.gallery
+      ? newsForm.gallery
+          .split(/[\n,]+/)
+          .map((url) => url.trim())
+          .filter((url) => url.length > 0)
+      : [];
+
+    const payload = {
+      title: newsForm.title,
+      subtitle: newsForm.subtitle,
+      category: newsForm.category,
+      author: newsForm.author,
+      date: newsForm.date,
+      image_url: newsForm.image_url,
+      description: newsForm.description,
+      link_url: newsForm.link_url,
+      link_label: newsForm.link_label,
+      gallery: parsedGallery,
+      status: newsForm.status,
+    };
+
     if (editingNewsId) {
-      // Update
       const { error } = await supabase
         .from('news')
-        .update(newsForm)
+        .update(payload)
         .eq('id', editingNewsId);
 
       if (error) {
@@ -119,8 +149,7 @@ export default function AdminPage() {
         loadData();
       }
     } else {
-      // Insert
-      const { error } = await supabase.from('news').insert([newsForm]);
+      const { error } = await supabase.from('news').insert([payload]);
       if (error) {
         setMessage({ text: 'දෝෂයක් ඇති විය: ' + error.message, type: 'error' });
       } else {
@@ -135,13 +164,25 @@ export default function AdminPage() {
   // 3. News: Edit Click
   const startEditNews = (item: NewsItem) => {
     setEditingNewsId(item.id);
+
+    let galleryStr = '';
+    if (Array.isArray(item.gallery)) {
+      galleryStr = item.gallery.join(',\n');
+    } else if (typeof item.gallery === 'string') {
+      galleryStr = item.gallery;
+    }
+
     setNewsForm({
-      title: item.title,
-      category: item.category,
-      author: item.author,
-      date: item.date,
-      image_url: item.image_url,
-      description: item.description,
+      title: item.title || '',
+      subtitle: item.subtitle || '',
+      category: item.category || 'ක්‍රීඩා',
+      author: item.author || 'Media Unit',
+      date: item.date || '',
+      image_url: item.image_url || '',
+      description: item.description || '',
+      link_url: item.link_url || '',
+      link_label: item.link_label || 'වැඩිදුර තොරතුරු මෙතැනින්',
+      gallery: galleryStr,
       status: item.status || 'published',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -157,7 +198,7 @@ export default function AdminPage() {
     }
   };
 
-  // 5. News: Toggle Status (Draft <-> Published)
+  // 5. News: Toggle Status
   const toggleNewsStatus = async (item: NewsItem) => {
     const newStatus = item.status === 'published' ? 'draft' : 'published';
     const { error } = await supabase.from('news').update({ status: newStatus }).eq('id', item.id);
@@ -170,11 +211,15 @@ export default function AdminPage() {
     setEditingNewsId(null);
     setNewsForm({
       title: '',
+      subtitle: '',
       category: 'ක්‍රීඩා',
       author: 'Media Unit',
       date: new Date().toLocaleDateString('si-LK', { year: 'numeric', month: 'long', day: 'numeric' }),
       image_url: '',
       description: '',
+      link_url: '',
+      link_label: 'වැඩිදුර තොරතුරු මෙතැනින්',
+      gallery: '',
       status: 'published',
     });
   };
@@ -238,7 +283,7 @@ export default function AdminPage() {
     const newStatus = item.status === 'published' ? 'draft' : 'published';
     const { error } = await supabase.from('youtube_videos').update({ status: newStatus }).eq('id', item.id);
     if (!error) {
-      setVideoList(videoList.map(v => v.id === item.id ? { ...v, status: newStatus } : v));
+      setVideoList(videoList.map(v => v.id === item.id ? { ...v, status: newStatus } : n));
     }
   };
 
@@ -256,108 +301,134 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#011a14] text-emerald-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto space-y-10">
+    <div className="min-h-screen bg-slate-50 text-slate-800 py-10 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-black text-white">Aththadassi K Vidyalaya Admin</h1>
-          <p className="text-emerald-300/70 text-sm mt-1">පුවත් සහ වීඩියෝ Edit, Draft සහ Delete කළමනාකරණය</p>
+        <div className="text-center space-y-1">
+          <span className="text-xs font-bold text-emerald-800 uppercase tracking-widest bg-emerald-100 px-3 py-1 rounded-full">
+            Admin Dashboard
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+            Aththadassi K Vidyalaya Admin
+          </h1>
+          <p className="text-slate-500 text-xs sm:text-sm">
+            පුවත්, ලිපි සහ YouTube වීඩියෝ සංස්කරණය හා කළමනාකරණය
+          </p>
         </div>
 
         {/* Tab Buttons */}
-        <div className="flex bg-[#022c22] p-1.5 rounded-2xl border border-emerald-800/80 max-w-md mx-auto">
+        <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm max-w-md mx-auto">
           <button
             onClick={() => { setActiveTab('news'); setMessage(null); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              activeTab === 'news' ? 'bg-[#065F46] text-white shadow-md' : 'text-emerald-300/70 hover:text-white'
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === 'news' 
+                ? 'bg-[#065F46] text-white shadow-sm' 
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Newspaper className="w-4 h-4" /> පුවත් / නිවේදන ({newsList.length})
+            <Newspaper className="w-4 h-4" /> පුවත් / ලිපි ({newsList.length})
           </button>
           <button
             onClick={() => { setActiveTab('video'); setMessage(null); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              activeTab === 'video' ? 'bg-[#065F46] text-white shadow-md' : 'text-emerald-300/70 hover:text-white'
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === 'video' 
+                ? 'bg-red-600 text-white shadow-sm' 
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Video className="w-4 h-4" /> YouTube වීඩියෝ ({videoList.length})
+            <Video className="w-4 h-4" /> වීඩියෝ ({videoList.length})
           </button>
         </div>
 
         {/* Status Alert */}
         {message && (
-          <div className={`p-4 rounded-xl flex items-center gap-3 text-sm max-w-3xl mx-auto ${
+          <div className={`p-4 rounded-2xl flex items-center gap-3 text-xs sm:text-sm max-w-3xl mx-auto shadow-sm ${
             message.type === 'success' 
-              ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-600/50' 
-              : 'bg-red-950/90 text-red-300 border border-red-700/50'
+              ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' 
+              : 'bg-red-50 text-red-900 border border-red-200'
           }`}>
-            {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
-            <span>{message.text}</span>
+            {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
+            <span className="font-semibold">{message.text}</span>
           </div>
         )}
 
         {/* ===================== 1. NEWS TAB ===================== */}
         {activeTab === 'news' && (
-          <div className="space-y-10">
-            {/* News Form (Add / Edit) */}
-            <form onSubmit={handleNewsSubmit} className="bg-[#022c22]/90 border border-emerald-800/60 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl max-w-3xl mx-auto">
-              <div className="flex items-center justify-between border-b border-emerald-800/60 pb-3">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  {editingNewsId ? <Edit3 className="w-5 h-5 text-amber-400" /> : <PlusCircle className="w-5 h-5 text-emerald-400" />}
-                  {editingNewsId ? 'පුවත සංස්කරණය කරන්න (Edit)' : 'නව පුවතක් හෝ නිවේදනයක් පළ කරන්න'}
+          <div className="space-y-8">
+            {/* News Form */}
+            <form onSubmit={handleNewsSubmit} className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm max-w-3xl mx-auto">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                  {editingNewsId ? <Edit3 className="w-5 h-5 text-amber-500" /> : <PlusCircle className="w-5 h-5 text-emerald-600" />}
+                  {editingNewsId ? 'පුවත සංස්කරණය (Edit Article)' : 'නව පුවතක් හෝ ලිපියක් එක් කරන්න'}
                 </h2>
                 {editingNewsId && (
-                  <button type="button" onClick={resetNewsForm} className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                  <button type="button" onClick={resetNewsForm} className="text-xs text-slate-500 hover:text-slate-800 font-semibold flex items-center gap-1">
                     <X className="w-4 h-4" /> අවලංගු කරන්න
                   </button>
                 )}
               </div>
 
+              {/* Title */}
               <div>
-                <label className="block text-xs font-semibold text-emerald-200 mb-1.5">පුවත් මාතෘකාව (Title)</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">පුවත් ප්‍රධාන මාතෘකාව (Main Title) *</label>
                 <input
                   type="text"
                   required
                   value={newsForm.title}
                   onChange={(e) => setNewsForm({ ...newsForm, title: e.target.value })}
-                  placeholder="මාතෘකාව ඇතුළත් කරන්න"
-                  className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                  placeholder="උදා: වාර්ෂික අධ්‍යාපන විනෝද චාරිකාව සාර්ථකව නිමාවෙයි"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-colors"
                 />
               </div>
 
+              {/* Subtitle / Excerpt */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">උප මාතෘකාව / කැපීපෙනෙන සාරාංශය (Subtitle / Highlight Box)</label>
+                <input
+                  type="text"
+                  value={newsForm.subtitle}
+                  onChange={(e) => setNewsForm({ ...newsForm, subtitle: e.target.value })}
+                  placeholder="උදා: සිසු දරු දැරියන් සහ ගුරුභවතුන් එක්ව මහත් උද්‍යෝගයෙන් සහභාගී වූ අමතක නොවන දිනක්"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-colors"
+                />
+              </div>
+
+              {/* Category, Author, Status */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-emerald-200 mb-1.5">වර්ගය (Category)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">වර්ගය (Category)</label>
                   <select
                     value={newsForm.category}
                     onChange={(e) => setNewsForm({ ...newsForm, category: e.target.value })}
-                    className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-colors"
                   >
                     <option value="ක්‍රීඩා">ක්‍රීඩා</option>
                     <option value="අධ්‍යාපන">අධ්‍යාපන</option>
                     <option value="උත්සව">උත්සව</option>
+                    <option value="චාරිකා">චාරිකා</option>
                     <option value="නිවේදන">නිවේදන</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-emerald-200 mb-1.5">කර්තෘ / අංශය</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">කර්තෘ / අංශය</label>
                   <input
                     type="text"
                     required
                     value={newsForm.author}
                     onChange={(e) => setNewsForm({ ...newsForm, author: e.target.value })}
-                    className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-emerald-200 mb-1.5">තත්ත්වය (Status)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">තත්ත්වය (Status)</label>
                   <select
                     value={newsForm.status}
                     onChange={(e) => setNewsForm({ ...newsForm, status: e.target.value as any })}
-                    className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-colors"
                   >
                     <option value="published">පළ කරන්න (Published)</option>
                     <option value="draft">කෙටුම්පතක් (Draft)</option>
@@ -365,81 +436,153 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* Main Cover Image */}
               <div>
-                <label className="block text-xs font-semibold text-emerald-200 mb-1.5">පින්තූර Link එක (Image URL)</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">ප්‍රධාන ආවරණ පින්තූරය (Featured Cover Image URL) *</label>
                 <input
                   type="url"
                   required
                   value={newsForm.image_url}
                   onChange={(e) => setNewsForm({ ...newsForm, image_url: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                  placeholder="https://res.cloudinary.com/... or https://..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-colors"
                 />
               </div>
 
+              {/* Description / Content (Paragraphs) */}
               <div>
-                <label className="block text-xs font-semibold text-emerald-200 mb-1.5">විස්තරය (Content / Description)</label>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-xs font-bold text-slate-700">සම්පූර්ණ විස්තරය (Description / Paragraphs) *</label>
+                  <span className="text-[10px] text-slate-400 font-medium">නව ඡේදයක් සඳහා Enter ඔබන්න</span>
+                </div>
                 <textarea
-                  rows={3}
+                  rows={6}
                   required
                   value={newsForm.description}
                   onChange={(e) => setNewsForm({ ...newsForm, description: e.target.value })}
-                  className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                  placeholder="පුවතේ විස්තරය මෙතැන ලියන්න. ඡේද වෙන් කිරීමට Enter (New Line) යොදන්න..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-colors leading-relaxed"
+                />
+              </div>
+
+              {/* External Action Button / Link */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                  <LinkIcon className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>අමතර පිවිසුම් බොත්තම (Optional Action Button)</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">බොත්තමේ පාඨය (Button Label)</label>
+                    <input
+                      type="text"
+                      value={newsForm.link_label}
+                      onChange={(e) => setNewsForm({ ...newsForm, link_label: e.target.value })}
+                      placeholder="උදා: PDF චක්‍රලේඛය බාගත කරන්න"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-emerald-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">යොමුවන Link එක (Destination URL)</label>
+                    <input
+                      type="url"
+                      value={newsForm.link_url}
+                      onChange={(e) => setNewsForm({ ...newsForm, link_url: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-emerald-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Gallery Images */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                    <Images className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>අමතර ඡායාරූප එකතුව (Photo Gallery URLs)</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400">Comma (,) හෝ New Line මඟින් වෙන් කරන්න</span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={newsForm.gallery}
+                  onChange={(e) => setNewsForm({ ...newsForm, gallery: e.target.value })}
+                  placeholder="https://image1.jpg,&#10;https://image2.jpg,&#10;https://image3.jpg"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs font-mono focus:outline-none focus:border-emerald-600"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold py-3 rounded-xl transition-all disabled:opacity-50"
+                className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl transition-all shadow-sm active:scale-98 disabled:opacity-50 text-sm"
               >
-                {loading ? 'සුරකිමින් පවතී...' : (editingNewsId ? 'වෙනස්කම් සුරකින්න (Save Changes)' : 'පුවත එකතු කරන්න')}
+                {loading ? 'සුරකිමින් පවතී...' : (editingNewsId ? 'වෙනස්කම් සුරකින්න (Save Changes)' : 'පුවත පළ කරන්න')}
               </button>
             </form>
 
             {/* News Manage Table / List */}
-            <div className="bg-[#022c22]/90 border border-emerald-800/60 rounded-3xl p-6 shadow-xl">
-              <h3 className="text-base font-bold text-white mb-4">දැනට ඇති පුවත් ලැයිස්තුව</h3>
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                <h3 className="text-base font-bold text-slate-900">දැනට පළ කර ඇති පුවත් ({newsList.length})</h3>
+                <span className="text-xs text-slate-400 font-medium">Live / Draft කළමනාකරණය</span>
+              </div>
+
               {fetching ? (
-                <div className="py-8 text-center text-emerald-400"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
+                <div className="py-12 text-center text-emerald-700">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                </div>
               ) : newsList.length === 0 ? (
-                <p className="text-slate-400 text-xs text-center py-6">කිසිදු පුවතක් හමු නොවීය.</p>
+                <p className="text-slate-400 text-xs text-center py-8">කිසිදු පුවතක් හමු නොවීය.</p>
               ) : (
-                <div className="divide-y divide-emerald-800/50">
+                <div className="divide-y divide-slate-100">
                   {newsList.map((item) => (
                     <div key={item.id} className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <img src={item.image_url} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0 bg-slate-900" />
-                        <div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img 
+                          src={item.image_url} 
+                          alt="" 
+                          className="w-14 h-14 rounded-xl object-cover shrink-0 bg-slate-100 border border-slate-200" 
+                        />
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                              item.status === 'draft' ? 'bg-amber-500/20 text-amber-300 border border-amber-400/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              item.status === 'draft' 
+                                ? 'bg-amber-100 text-amber-800 border border-amber-200' 
+                                : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                             }`}>
                               {item.status === 'draft' ? 'Draft' : 'Live'}
                             </span>
-                            <span className="text-xs text-slate-400">{item.date}</span>
+                            <span className="text-xs text-slate-400 font-medium">{item.date}</span>
+                            <span className="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded">
+                              {item.category}
+                            </span>
                           </div>
-                          <h4 className="text-sm font-bold text-white mt-1 line-clamp-1">{item.title}</h4>
+                          <h4 className="text-sm font-bold text-slate-900 mt-1 truncate max-w-md">{item.title}</h4>
+                          {item.subtitle && (
+                            <p className="text-xs text-slate-500 truncate max-w-md">{item.subtitle}</p>
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                      <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
                         <button
                           onClick={() => toggleNewsStatus(item)}
                           title={item.status === 'published' ? 'Draft කරන්න' : 'Publish කරන්න'}
-                          className="p-2 rounded-lg bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 text-xs flex items-center gap-1"
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
                         >
-                          {item.status === 'published' ? <EyeOff className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4 text-emerald-400" />}
+                          {item.status === 'published' ? <EyeOff className="w-4 h-4 text-amber-600" /> : <Eye className="w-4 h-4 text-emerald-600" />}
                         </button>
                         <button
                           onClick={() => startEditNews(item)}
-                          className="p-2 rounded-lg bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200"
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
                         >
-                          <Edit3 className="w-4 h-4" />
+                          <Edit3 className="w-4 h-4 text-emerald-800" />
                         </button>
                         <button
                           onClick={() => deleteNews(item.id)}
-                          className="p-2 rounded-lg bg-red-950/60 hover:bg-red-900 text-red-300"
+                          className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -454,59 +597,60 @@ export default function AdminPage() {
 
         {/* ===================== 2. YOUTUBE VIDEO TAB ===================== */}
         {activeTab === 'video' && (
-          <div className="space-y-10">
-            {/* Video Form (Add / Edit) */}
-            <form onSubmit={handleVideoSubmit} className="bg-[#022c22]/90 border border-emerald-800/60 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl max-w-3xl mx-auto">
-              <div className="flex items-center justify-between border-b border-emerald-800/60 pb-3">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  {editingVideoId ? <Edit3 className="w-5 h-5 text-amber-400" /> : <PlusCircle className="w-5 h-5 text-red-400" />}
-                  {editingVideoId ? 'වීඩියෝව සංස්කරණය කරන්න (Edit)' : 'නව YouTube වීඩියෝවක් එක් කරන්න'}
+          <div className="space-y-8">
+            {/* Video Form */}
+            <form onSubmit={handleVideoSubmit} className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm max-w-3xl mx-auto">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                  {editingVideoId ? <Edit3 className="w-5 h-5 text-amber-500" /> : <PlusCircle className="w-5 h-5 text-red-600" />}
+                  {editingVideoId ? 'වීඩියෝව සංස්කරණය (Edit Video)' : 'නව YouTube වීඩියෝවක් එක් කරන්න'}
                 </h2>
                 {editingVideoId && (
-                  <button type="button" onClick={resetVideoForm} className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                  <button type="button" onClick={resetVideoForm} className="text-xs text-slate-500 hover:text-slate-800 font-semibold flex items-center gap-1">
                     <X className="w-4 h-4" /> අවලංගු කරන්න
                   </button>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-emerald-200 mb-1.5">වීඩියෝ මාතෘකාව (Title)</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">වීඩියෝ මාතෘකාව (Title) *</label>
                 <input
                   type="text"
                   required
                   value={videoForm.title}
                   onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
-                  className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                  placeholder="උදා: 2026 වාර්ෂික නිවාසාන්තර මලල ක්‍රීඩා උළෙල"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-red-600 focus:bg-white transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-emerald-200 mb-1.5">කාණ්ඩය</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">කාණ්ඩය</label>
                   <input
                     type="text"
                     required
                     value={videoForm.category}
                     onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })}
-                    className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-red-600 focus:bg-white transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-emerald-200 mb-1.5">ධාවන කාලය</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">ධාවන කාලය</label>
                   <input
                     type="text"
                     required
                     value={videoForm.duration}
                     onChange={(e) => setVideoForm({ ...videoForm, duration: e.target.value })}
-                    className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-red-600 focus:bg-white transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-emerald-200 mb-1.5">තත්ත්වය (Status)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">තත්ත්වය (Status)</label>
                   <select
                     value={videoForm.status}
                     onChange={(e) => setVideoForm({ ...videoForm, status: e.target.value as any })}
-                    className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-red-600 focus:bg-white transition-colors"
                   >
                     <option value="published">පළ කරන්න (Published)</option>
                     <option value="draft">කෙටුම්පතක් (Draft)</option>
@@ -516,23 +660,25 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-emerald-200 mb-1.5">YouTube Link (URL)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">YouTube Link (URL) *</label>
                   <input
                     type="url"
                     required
                     value={videoForm.youtube_url}
                     onChange={(e) => setVideoForm({ ...videoForm, youtube_url: e.target.value })}
-                    className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-red-600 focus:bg-white transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-emerald-200 mb-1.5">Thumbnail URL</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Thumbnail URL *</label>
                   <input
                     type="url"
                     required
                     value={videoForm.thumbnail_url}
                     onChange={(e) => setVideoForm({ ...videoForm, thumbnail_url: e.target.value })}
-                    className="w-full bg-[#011a14] border border-emerald-700/60 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400"
+                    placeholder="https://img.youtube.com/vi/.../mqdefault.jpg"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:border-red-600 focus:bg-white transition-colors"
                   />
                 </div>
               </div>
@@ -540,55 +686,67 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50"
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm active:scale-98 disabled:opacity-50 text-sm"
               >
                 {loading ? 'සුරකිමින් පවතී...' : (editingVideoId ? 'වීඩියෝව යාවත්කාලීන කරන්න' : 'වීඩියෝව පළ කරන්න')}
               </button>
             </form>
 
             {/* Video Manage List */}
-            <div className="bg-[#022c22]/90 border border-emerald-800/60 rounded-3xl p-6 shadow-xl">
-              <h3 className="text-base font-bold text-white mb-4">දැනට ඇති වීඩියෝ ලැයිස්තුව</h3>
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                <h3 className="text-base font-bold text-slate-900">දැනට ඇති වීඩියෝ ({videoList.length})</h3>
+                <span className="text-xs text-slate-400 font-medium">YouTube Channel Feed</span>
+              </div>
+
               {fetching ? (
-                <div className="py-8 text-center text-red-400"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
+                <div className="py-12 text-center text-red-600">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                </div>
               ) : videoList.length === 0 ? (
-                <p className="text-slate-400 text-xs text-center py-6">කිසිදු වීඩියෝවක් හමු නොවීය.</p>
+                <p className="text-slate-400 text-xs text-center py-8">කිසිදු වීඩියෝවක් හමු නොවීය.</p>
               ) : (
-                <div className="divide-y divide-emerald-800/50">
+                <div className="divide-y divide-slate-100">
                   {videoList.map((item) => (
                     <div key={item.id} className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <img src={item.thumbnail_url} alt="" className="w-16 h-10 rounded-lg object-cover shrink-0 bg-slate-900" />
-                        <div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img 
+                          src={item.thumbnail_url} 
+                          alt="" 
+                          className="w-16 h-10 rounded-lg object-cover shrink-0 bg-slate-100 border border-slate-200" 
+                        />
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                              item.status === 'draft' ? 'bg-amber-500/20 text-amber-300' : 'bg-red-500/20 text-red-300'
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              item.status === 'draft' 
+                                ? 'bg-amber-100 text-amber-800 border border-amber-200' 
+                                : 'bg-red-100 text-red-800 border border-red-200'
                             }`}>
                               {item.status === 'draft' ? 'Draft' : 'Live'}
                             </span>
-                            <span className="text-xs text-slate-400">{item.duration}</span>
+                            <span className="text-xs text-slate-400 font-medium">{item.duration}</span>
                           </div>
-                          <h4 className="text-sm font-bold text-white mt-1 line-clamp-1">{item.title}</h4>
+                          <h4 className="text-sm font-bold text-slate-900 mt-1 truncate max-w-md">{item.title}</h4>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                      <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
                         <button
                           onClick={() => toggleVideoStatus(item)}
                           title={item.status === 'published' ? 'Draft කරන්න' : 'Publish කරන්න'}
-                          className="p-2 rounded-lg bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200"
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
                         >
-                          {item.status === 'published' ? <EyeOff className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4 text-emerald-400" />}
+                          {item.status === 'published' ? <EyeOff className="w-4 h-4 text-amber-600" /> : <Eye className="w-4 h-4 text-emerald-600" />}
                         </button>
                         <button
                           onClick={() => startEditVideo(item)}
-                          className="p-2 rounded-lg bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200"
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
                         >
-                          <Edit3 className="w-4 h-4" />
+                          <Edit3 className="w-4 h-4 text-emerald-800" />
                         </button>
                         <button
                           onClick={() => deleteVideo(item.id)}
-                          className="p-2 rounded-lg bg-red-950/60 hover:bg-red-900 text-red-300"
+                          className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

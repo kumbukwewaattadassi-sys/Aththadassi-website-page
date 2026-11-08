@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 const LOGO_URL =
-  "https://yt3.googleusercontent.com/KRA70oqBWoSNJ4mtw41dxA1npgdd0kPA4dMmELMo34N0h6JCCR6B3JiV24oZEutt8AOccQs3=s160-c-k-c0x00ffffff-no-rj";
+  "https://res.cloudinary.com/n911ylla/image/upload/q_auto/copy_of_kra70oqbwosnj4mtw41dxa1npgdd0kpa4dmmelmo34n0h6jccr6b3jiv24ozeutt8aoccqs3_s160-c-k-c0x00ffffff-no-rj.jpg";
 
 const navLinks = [
   { label: "මුල් පිටුව", href: "/" },

@@ -40,17 +40,21 @@ export default function HeroSection() {
   return (
     <>
       {/* ──────────────────────────────────────────────────────────
-          1. FRESH LIGHT GREEN MOBILE VIEW (md:hidden)
-          - Light Emerald (#F0FDF4) Theme with zero lag
+          1. ELEGANT DARK EMERALD GREEN MOBILE VIEW (md:hidden)
+          - Deep Dark Forest Green Theme Matching PC Look
       ────────────────────────────────────────────────────────── */}
-      <div className="block md:hidden bg-[#F0FDF4] text-slate-800 pt-20 pb-8 px-4 font-sans relative transform-gpu">
+      <div className="block md:hidden bg-gradient-to-b from-[#021d14] via-[#03261b] to-[#021811] text-white pt-20 pb-8 px-4 font-sans relative overflow-hidden transform-gpu">
+        
+        {/* Subtle Ambient Glow */}
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
         <div className="flex flex-col gap-4 relative z-10">
           
           {/* Header Information */}
           <div className="flex flex-col items-center text-center space-y-2 pt-2">
             
-            {/* Center Logo */}
-            <div className="w-20 h-20 rounded-full border-2 border-emerald-600 bg-white flex items-center justify-center overflow-hidden shadow-sm">
+            {/* Center Logo with Golden Ring */}
+            <div className="w-20 h-20 rounded-full border-2 border-amber-400/90 bg-[#02150e] flex items-center justify-center overflow-hidden shadow-lg shadow-black/40">
               <img
                 src="https://res.cloudinary.com/n911ylla/image/upload/q_auto/KRA70oqBWoSNJ4mtw41dxA1npgdd0kPA4dMmELMo34N0h6JCCR6B3JiV24oZEutt8AOccQs3_s160-c-k-c0x00ffffff-no-rj.jpg"
                 alt="School Emblem"
@@ -67,29 +71,29 @@ export default function HeroSection() {
 
             {/* School Name & Founded */}
             <div>
-              <h2 className="text-emerald-950 font-black text-sm tracking-wide">
+              <h2 className="text-white font-extrabold text-sm tracking-wide drop-shadow-sm">
                 පු/කුඹුක්වැව අත්ථදස්සි කනිෂ්ඨ විද්‍යාලය
               </h2>
-              <p className="text-emerald-700 text-[10px] font-bold mt-0.5 tracking-wider">
+              <p className="text-amber-300 text-[10px] font-bold mt-0.5 tracking-wider">
                 පාසල් ආරම්භය :- 1963/ 01/ 02
               </p>
             </div>
 
             {/* Motto Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 text-[10px] font-black tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-600/50 text-emerald-200 text-[10px] font-bold tracking-wider shadow-inner">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               &quot; මානිවතන අභික්කම &quot;
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl font-black leading-tight text-slate-900 tracking-tight pt-1">
+            <h1 className="text-2xl font-black leading-tight text-white tracking-tight pt-1">
               දැනුමෙන් සන්නද්ධ <br />
-              <span className="text-emerald-700">විශිෂ්ටතම පරපුරක්</span>
+              <span className="text-[#F5CE68]">විශිෂ්ටතම පරපුරක්</span>
             </h1>
           </div>
 
           {/* Photo Banner */}
-          <div className="relative w-full aspect-[16/10] max-h-56 rounded-2xl overflow-hidden shadow-sm bg-emerald-100 border border-emerald-200">
+          <div className="relative w-full aspect-[16/10] max-h-56 rounded-2xl overflow-hidden shadow-xl bg-emerald-950 border border-emerald-800/80">
             <img
               src={slides[active].url}
               alt={slides[active].label}
@@ -97,21 +101,21 @@ export default function HeroSection() {
               className="w-full h-full object-cover object-center"
             />
             
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
 
             <div className="absolute bottom-2.5 left-3">
-              <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/95 text-emerald-900 border border-emerald-200 shadow-xs">
+              <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-black/75 text-amber-300 border border-amber-400/30 backdrop-blur-xs">
                 Aththadassi kv • {slides[active].label}
               </span>
             </div>
 
-            <div className="absolute bottom-2.5 right-3 flex items-center gap-1 bg-black/60 px-2 py-1 rounded-md">
+            <div className="absolute bottom-2.5 right-3 flex items-center gap-1 bg-black/70 px-2 py-1 rounded-md backdrop-blur-xs">
               {slides.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setActive(i)}
                   className={`h-1.5 rounded-full transition-all ${
-                    i === active ? "w-4 bg-amber-400" : "w-1.5 bg-white/50"
+                    i === active ? "w-4 bg-amber-400" : "w-1.5 bg-white/40"
                   }`}
                   aria-label={`Slide ${i + 1}`}
                 />
@@ -119,18 +123,18 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* Description Card */}
-          <div className="bg-white p-3.5 rounded-2xl border border-emerald-100 text-center shadow-xs">
-            <p className="m-0 text-slate-700 text-[11px] leading-relaxed font-medium">
-              “මානිවතන අභික්කම” යන අපගේ ආදර්ශ පාඨය පෙරදැරි කරගෙන, දැනුමෙන්, හැකියාවෙන් සහ යහපත් ගුණාංගවලින් පිරිපුන් අනාගත පරපුරක් ගොඩනැගීම සඳහා අපි එක්ව ඉදිරියට යමු.
+          {/* Motto Statement Box - Deep Dark Emerald Container */}
+          <div className="bg-[#032a1f]/90 p-3.5 rounded-2xl border border-emerald-700/60 text-center shadow-lg shadow-black/20">
+            <p className="m-0 text-emerald-100 text-[11px] leading-relaxed font-medium">
+              “<span className="text-[#FDE047] font-bold">මානිවතන අභික්කම</span>” යන අපගේ ආදර්ශ පාඨය පෙරදැරි කරගෙන, දැනුමෙන්, හැකියාවෙන් සහ යහපත් ගුණාංගවලින් පිරිපුන් අනාගත පරපුරක් ගොඩනැගීම සඳහා අපි එක්ව ඉදිරියට යමු.
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pt-0.5">
             <Link
               href="/about"
-              className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-xs active:scale-95 transition-all"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-xs font-black shadow-md shadow-emerald-950/50 active:scale-95 transition-all"
             >
               <span>අපේ පාසල ගැන</span>
               <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
@@ -140,21 +144,19 @@ export default function HeroSection() {
 
             <Link
               href="/contact"
-              className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 px-3 rounded-xl bg-white text-emerald-900 text-xs font-bold border border-emerald-200 shadow-xs active:scale-95 transition-all"
+              className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 px-3 rounded-xl bg-[#032a1f] text-emerald-200 text-xs font-bold border border-emerald-700/80 shadow-md active:scale-95 transition-all hover:bg-[#04382a]"
             >
               <span>විමසීම්</span>
             </Link>
           </div>
 
-          
-
           {/* Stats Grid */}
-          <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-emerald-200/80 text-center">
+          <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-emerald-800/60 text-center">
             {stats.map((s, i) => (
-              <div key={i} className="p-2 rounded-xl bg-white border border-emerald-100 shadow-2xs">
-                <p className="m-0 text-xs font-black text-slate-900 leading-none">{s.value}</p>
-                <p className="m-0 mt-1 text-[8.5px] font-bold text-emerald-700 leading-tight">{s.sinhala}</p>
-                <p className="m-0 text-[7px] text-slate-400 uppercase">{s.english}</p>
+              <div key={i} className="p-2 rounded-xl bg-[#03241b] border border-emerald-800/70 shadow-inner">
+                <p className="m-0 text-xs font-black text-white leading-none">{s.value}</p>
+                <p className="m-0 mt-1 text-[8.5px] font-bold text-amber-400 leading-tight">{s.sinhala}</p>
+                <p className="m-0 text-[7px] text-emerald-300/60 uppercase">{s.english}</p>
               </div>
             ))}
           </div>
@@ -279,8 +281,9 @@ export default function HeroSection() {
               }}
             >
               <img
-                src="https://yt3.googleusercontent.com/KRA70oqBWoSNJ4mtw41dxA1npgdd0kPA4dMmELMo34N0h6JCCR6B3JiV24oZEutt8AOccQs3=s160-c-k-c0x00ffffff-no-rj"
+                src="https://res.cloudinary.com/n911ylla/image/upload/q_auto/KRA70oqBWoSNJ4mtw41dxA1npgdd0kPA4dMmELMo34N0h6JCCR6B3JiV24oZEutt8AOccQs3_s160-c-k-c0x00ffffff-no-rj.jpg"
                 alt="School Emblem"
+                referrerPolicy="no-referrer"
                 style={{
                   width: "100%",
                   height: "100%",
