@@ -283,7 +283,7 @@ export default function AdminPage() {
     const newStatus = item.status === 'published' ? 'draft' : 'published';
     const { error } = await supabase.from('youtube_videos').update({ status: newStatus }).eq('id', item.id);
     if (!error) {
-      setVideoList(videoList.map(v => v.id === item.id ? { ...v, status: newStatus } : n));
+      setVideoList(videoList.map(v => v.id === item.id ? { ...v, status: newStatus } : v));
     }
   };
 
