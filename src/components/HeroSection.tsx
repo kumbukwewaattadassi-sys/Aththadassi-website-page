@@ -28,33 +28,53 @@ const stats = [
 export default function HeroSection() {
   const [active, setActive] = useState(0);
 
+  // Mobile සහ PC දෙකටම ඡායාරූප ස්වයංක්‍රීයව මාරු වීම
   useEffect(() => {
-    if (typeof window !== "undefined" && window.innerWidth >= 768) {
-      const timer = setInterval(() => {
-        setActive((prev) => (prev + 1) % slides.length);
-      }, 4500);
-      return () => clearInterval(timer);
-    }
+    const timer = setInterval(() => {
+      setActive((prev) => (prev + 1) % slides.length);
+    }, 4500);
+    return () => clearInterval(timer);
   }, []);
 
   return (
     <>
       {/* ──────────────────────────────────────────────────────────
-          1. ELEGANT DARK EMERALD GREEN MOBILE VIEW (md:hidden)
-          - Deep Dark Forest Green Theme Matching PC Look
+          1. DYNAMIC BLURRED SLIDESHOW MOBILE VIEW (md:hidden)
+          - පසුබිමෙන් Slides 3 ම Blur වී මාරු වේ
+          - Foreground Text සහ Buttons පැහැදිලිව පෙනේ
       ────────────────────────────────────────────────────────── */}
-      <div className="block md:hidden bg-gradient-to-b from-[#021d14] via-[#03261b] to-[#021811] text-white pt-20 pb-8 px-4 font-sans relative overflow-hidden transform-gpu">
+      <div className="block md:hidden bg-black text-white pt-20 pb-8 px-4 font-sans relative overflow-hidden transform-gpu min-h-[640px]">
         
-        {/* Subtle Ambient Glow */}
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        {/* ── BACKGROUND BLURRED SLIDESHOW ── */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          {slides.map((s, i) => (
+            <div
+              key={i}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                i === active ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              <img
+                src={s.url}
+                alt=""
+                className="w-full h-full object-cover scale-125 filter blur-xl brightness-75 contrast-125 transform-gpu"
+              />
+            </div>
+          ))}
 
+          {/* Dark Green Gradient Tint (Text කියවීමට පහසු වන සේ) */}
+          <div className="absolute inset-0 bg-[#021811]/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/85" />
+        </div>
+
+        {/* ── FOREGROUND CONTENT ── */}
         <div className="flex flex-col gap-4 relative z-10">
           
           {/* Header Information */}
           <div className="flex flex-col items-center text-center space-y-2 pt-2">
             
             {/* Center Logo with Golden Ring */}
-            <div className="w-20 h-20 rounded-full border-2 border-amber-400/90 bg-[#02150e] flex items-center justify-center overflow-hidden shadow-lg shadow-black/40">
+            <div className="w-20 h-20 rounded-full border-2 border-amber-400/90 bg-[#02150e] flex items-center justify-center overflow-hidden shadow-xl shadow-black/60">
               <img
                 src="https://res.cloudinary.com/n911ylla/image/upload/q_auto/KRA70oqBWoSNJ4mtw41dxA1npgdd0kPA4dMmELMo34N0h6JCCR6B3JiV24oZEutt8AOccQs3_s160-c-k-c0x00ffffff-no-rj.jpg"
                 alt="School Emblem"
@@ -71,34 +91,34 @@ export default function HeroSection() {
 
             {/* School Name & Founded */}
             <div>
-              <h2 className="text-white font-extrabold text-sm tracking-wide drop-shadow-sm">
+              <h2 className="text-white font-extrabold text-sm tracking-wide drop-shadow-md">
                 පු/කුඹුක්වැව අත්ථදස්සි කනිෂ්ඨ විද්‍යාලය
               </h2>
-              <p className="text-amber-300 text-[10px] font-bold mt-0.5 tracking-wider">
+              <p className="text-amber-300 text-[10px] font-bold mt-0.5 tracking-wider drop-shadow-sm">
                 පාසල් ආරම්භය :- 1963/ 01/ 02
               </p>
             </div>
 
             {/* Motto Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-600/50 text-emerald-200 text-[10px] font-bold tracking-wider shadow-inner">
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-950/85 border border-emerald-500/40 text-emerald-200 text-[10px] font-bold tracking-wider shadow-inner">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               &quot; මානිවතන අභික්කම &quot;
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl font-black leading-tight text-white tracking-tight pt-1">
+            <h1 className="text-2xl font-black leading-tight text-white tracking-tight pt-1 drop-shadow-md">
               දැනුමෙන් සන්නද්ධ <br />
               <span className="text-[#F5CE68]">විශිෂ්ටතම පරපුරක්</span>
             </h1>
           </div>
 
-          {/* Photo Banner */}
-          <div className="relative w-full aspect-[16/10] max-h-56 rounded-2xl overflow-hidden shadow-xl bg-emerald-950 border border-emerald-800/80">
+          {/* ── Main Sharp Slideshow Banner ── */}
+          <div className="relative w-full aspect-[16/10] max-h-56 rounded-2xl overflow-hidden shadow-2xl bg-emerald-950 border border-emerald-700/80">
             <img
               src={slides[active].url}
               alt={slides[active].label}
               loading="eager"
-              className="w-full h-full object-cover object-center"
+              className="w-full h-full object-cover object-center transition-opacity duration-500"
             />
             
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
@@ -123,8 +143,8 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* Motto Statement Box - Deep Dark Emerald Container */}
-          <div className="bg-[#032a1f]/90 p-3.5 rounded-2xl border border-emerald-700/60 text-center shadow-lg shadow-black/20">
+          {/* Motto Statement Box */}
+          <div className="bg-[#02241a]/90 p-3.5 rounded-2xl border border-emerald-600/50 text-center shadow-lg backdrop-blur-xs">
             <p className="m-0 text-emerald-100 text-[11px] leading-relaxed font-medium">
               “<span className="text-[#FDE047] font-bold">මානිවතන අභික්කම</span>” යන අපගේ ආදර්ශ පාඨය පෙරදැරි කරගෙන, දැනුමෙන්, හැකියාවෙන් සහ යහපත් ගුණාංගවලින් පිරිපුන් අනාගත පරපුරක් ගොඩනැගීම සඳහා අපි එක්ව ඉදිරියට යමු.
             </p>
@@ -134,7 +154,7 @@ export default function HeroSection() {
           <div className="flex items-center gap-2 pt-0.5">
             <Link
               href="/about"
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-xs font-black shadow-md shadow-emerald-950/50 active:scale-95 transition-all"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-950/60 active:scale-95 transition-all"
             >
               <span>අපේ පාසල ගැන</span>
               <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
@@ -144,16 +164,16 @@ export default function HeroSection() {
 
             <Link
               href="/contact"
-              className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 px-3 rounded-xl bg-[#032a1f] text-emerald-200 text-xs font-bold border border-emerald-700/80 shadow-md active:scale-95 transition-all hover:bg-[#04382a]"
+              className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 px-3 rounded-xl bg-[#02241a]/90 text-emerald-200 text-xs font-bold border border-emerald-600/60 shadow-md active:scale-95 transition-all hover:bg-[#033325]"
             >
               <span>විමසීම්</span>
             </Link>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-emerald-800/60 text-center">
+          <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-emerald-700/50 text-center">
             {stats.map((s, i) => (
-              <div key={i} className="p-2 rounded-xl bg-[#03241b] border border-emerald-800/70 shadow-inner">
+              <div key={i} className="p-2 rounded-xl bg-[#021f17]/90 border border-emerald-700/60 shadow-inner">
                 <p className="m-0 text-xs font-black text-white leading-none">{s.value}</p>
                 <p className="m-0 mt-1 text-[8.5px] font-bold text-amber-400 leading-tight">{s.sinhala}</p>
                 <p className="m-0 text-[7px] text-emerald-300/60 uppercase">{s.english}</p>
