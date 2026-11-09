@@ -30,7 +30,8 @@ import {
   Calendar,
   X,
   Eye,
-  EyeOff
+  EyeOff,
+  Volume2
 } from 'lucide-react';
 
 interface Question {
@@ -91,6 +92,64 @@ function shuffleArray<T>(array: T[]): T[] {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
+}
+
+// Browser Audio API Helper (බාහිර ශ්‍රව්‍ය ලිපිගොනු අවශ්‍ය නොවේ)
+function playFeedbackSound(isCorrect: boolean) {
+  try {
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+
+    if (isCorrect) {
+      // Pleasant Success Major Chime
+      const now = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.type = 'triangle';
+      osc2.type = 'sine';
+
+      osc1.frequency.setValueAtTime(523.25, now); // C5
+      osc1.frequency.exponentialRampToValueAtTime(659.25, now + 0.12); // E5
+
+      osc2.frequency.setValueAtTime(659.25, now + 0.12);
+      osc2.frequency.exponentialRampToValueAtTime(783.99, now + 0.28); // G5
+
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(now);
+      osc1.stop(now + 0.15);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.35);
+    } else {
+      // Gentle Low Error Thud
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.linearRampToValueAtTime(80, now + 0.22);
+
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.22);
+    }
+  } catch {
+    // Sound unavailable or blocked by browser policy
+  }
 }
 
 function calculateDynamicIQ(history: ScoreRecord[]) {
@@ -168,7 +227,7 @@ export default function QuizGamePage() {
 
   // Ready 3-Sec Countdown Modal State
   const [showCountdownModal, setShowCountdownModal] = useState(false);
-  const [startCount, setStartCount] = useState(7);
+  const [startCount, setStartCount] = useState(5);
 
   // Birth Date Selectors
   const [birthYear, setBirthYear] = useState('2012');
@@ -188,6 +247,9 @@ export default function QuizGamePage() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Instant Feedback State
+  const [isShaking, setIsShaking] = useState(false);
 
   // Timer
   const [timeLeft, setTimeLeft] = useState(QUIZ_TIME_SECONDS);
@@ -537,7 +599,7 @@ export default function QuizGamePage() {
         setLoading(false);
 
         setShowCountdownModal(true);
-        setStartCount(7);
+        setStartCount(5);
 
         const countdownInterval = setInterval(() => {
           setStartCount((prev) => {
@@ -562,15 +624,34 @@ export default function QuizGamePage() {
     }
   };
 
+  // Instant Feedback: උත්තරයක් ක්ලික් කළ සැනින් Sound & Vibration සමඟ හරි/වැරදි පෙන්වීම
   const handleSelectOption = (optionIndex: number) => {
     if (timeLeft <= 0 || submitting) return;
+    if (userAnswers[currentIndex] !== undefined) return; // ඒ ප්‍රශ්නයට දැනටමත් උත්තර දී ඇත්නම් වෙනස් කළ නොහැක
+
+    const currentQ = questions[currentIndex];
+    const isCorrect = optionIndex === currentQ.correct_index;
+
+    // ශබ්දය වාදනය කිරීම (Web Audio API)
+    playFeedbackSound(isCorrect);
+
+    // වැරදි නම්: Vibration + Shake effect
+    if (!isCorrect) {
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        try {
+          navigator.vibrate([120, 80, 120]);
+        } catch {}
+      }
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
+    }
+
     setUserAnswers(prev => ({
       ...prev,
       [currentIndex]: optionIndex
     }));
   };
 
-  // ලකුණු 0 ක් ආවත්, ඕනෑම විෂයක් ලියූ විට 100% History Add & Update වන Logic එක
   const handleFinishQuiz = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (!currentUser) return;
@@ -595,7 +676,6 @@ export default function QuizGamePage() {
 
       if (existingRecords && existingRecords.length > 0) {
         const existingRecord = existingRecords[0];
-        // කලින් ලකුණට වඩා වැඩි ලකුණක් ගත් විට update කරයි (කලින් 0 නම් අලුත් ලකුණ වැටේ)
         const updatedScore = Math.max(finalScore, Number(existingRecord.score || 0));
 
         await supabase
@@ -608,7 +688,6 @@ export default function QuizGamePage() {
           })
           .eq('id', existingRecord.id);
       } else {
-        // ලකුණු 0ක් ආවත් අනිවාර්යයෙන්ම Database එකට record එක add වේ
         await supabase
           .from('quiz_scores')
           .insert([
@@ -642,6 +721,9 @@ export default function QuizGamePage() {
 
   const progressPercent = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   const totalCorrect = questions.filter((q, idx) => userAnswers[idx] === q.correct_index).length;
+  const totalWrong = questions.filter((q, idx) => userAnswers[idx] !== undefined && userAnswers[idx] !== q.correct_index).length;
+  const totalSkipped = questions.length - (totalCorrect + totalWrong);
+
   const iqMetrics = calculateDynamicIQ(studentHistory);
 
   const top1 = leaderboard[0];
@@ -649,8 +731,11 @@ export default function QuizGamePage() {
   const top3 = leaderboard[2];
   const restRanks = leaderboard.slice(3);
 
+  const currentQ = questions[currentIndex];
+  const hasAnsweredCurrent = userAnswers[currentIndex] !== undefined;
+  const isCurrentCorrect = hasAnsweredCurrent && userAnswers[currentIndex] === currentQ?.correct_index;
+
   return (
-    /* pt-24 sm:pt-28 මඟින් Mobile හි Fixed Navbar එකට යටවීම සම්පූර්ණයෙන්ම වළක්වා ඉඩ ලබා දී ඇත */
     <div className="min-h-screen bg-[#F0FDF4]/70 pt-24 sm:pt-28 lg:pt-32 pb-10 px-3 sm:px-6 lg:px-8 max-w-xl lg:max-w-7xl mx-auto transform-gpu subpixel-antialiased">
       <div className="w-full space-y-3.5 sm:space-y-6">
 
@@ -800,7 +885,7 @@ export default function QuizGamePage() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
-                {/* ── 3. HISTORY RECORD (PC සහ Mobile දෙකෙහිම පෙන්වයි) ── */}
+                {/* ── 3. HISTORY RECORD ── */}
                 <div className="space-y-2 pt-2 border-t border-slate-100">
                   <span className="text-[11px] sm:text-xs font-black text-slate-700 block">
                     පෙර ලකුණු ලේඛනය (History):
@@ -939,9 +1024,11 @@ export default function QuizGamePage() {
               </div>
             )}
 
-            {/* STAGE 4: PLAYING FRAME */}
+            {/* STAGE 4: PLAYING FRAME WITH INSTANT FEEDBACK */}
             {gameState === 'playing' && questions.length > 0 && (
               <div className="space-y-3 sm:space-y-4">
+                
+                {/* Status Bar */}
                 <div className="bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-sm space-y-2.5">
                   <div className="flex items-center justify-between text-xs font-black">
                     <div className="flex items-center gap-1.5 truncate max-w-[45%]">
@@ -977,43 +1064,94 @@ export default function QuizGamePage() {
                   </div>
                 </div>
 
-                <div className="bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 space-y-3.5 sm:space-y-4 shadow-sm">
+                {/* Question & Options Card (with Shake effect on wrong) */}
+                <div className={`bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 space-y-3.5 sm:space-y-4 shadow-sm transition-transform duration-200 ${
+                  isShaking ? 'animate-[shake_0.4s_ease-in-out]' : ''
+                }`}>
+                  
                   <div className="flex items-start gap-2.5 sm:gap-3">
                     <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-blue-100 text-blue-800 font-black text-xs sm:text-sm flex items-center justify-center shrink-0 mt-0.5">
                       {currentIndex + 1}
                     </div>
                     <h2 className="text-xs sm:text-base lg:text-lg font-black text-slate-900 leading-snug">
-                      {questions[currentIndex].question}
+                      {currentQ.question}
                     </h2>
                   </div>
 
+                  {/* Options List */}
                   <div className="space-y-2 sm:space-y-2.5">
-                    {questions[currentIndex].options.map((opt, optIdx) => {
-                      const isSelected = userAnswers[currentIndex] === optIdx;
+                    {currentQ.options.map((opt, optIdx) => {
+                      const userChoice = userAnswers[currentIndex];
+                      const isChosen = userChoice === optIdx;
+                      const isThisCorrect = optIdx === currentQ.correct_index;
+
+                      // Style Determination:
+                      let containerClasses = "bg-slate-50/70 border-slate-200 text-slate-700 hover:border-slate-300";
+                      let indicatorClasses = "border-slate-300 bg-white text-transparent";
+
+                      if (hasAnsweredCurrent) {
+                        if (isThisCorrect) {
+                          // නිවැරදි පිළිතුර (කොළ පාටින් Highlight)
+                          containerClasses = "bg-emerald-50 border-emerald-500 text-emerald-950 font-black shadow-xs";
+                          indicatorClasses = "bg-emerald-600 text-white border-emerald-600 scale-105";
+                        } else if (isChosen) {
+                          // තෝරාගත් පිළිතුර වැරදි නම් (රතු පාටින් Mark)
+                          containerClasses = "bg-rose-50 border-rose-500 text-rose-950 font-black shadow-xs";
+                          indicatorClasses = "bg-rose-600 text-white border-rose-600 scale-105";
+                        } else {
+                          containerClasses = "bg-slate-50/40 border-slate-100 text-slate-400 opacity-60";
+                        }
+                      }
+
                       return (
                         <div
                           key={optIdx}
                           onClick={() => handleSelectOption(optIdx)}
                           className={`flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition-all ${
-                            timeLeft <= 0 ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'
-                          } ${
-                            isSelected 
-                              ? 'bg-blue-50 border-blue-500 text-blue-950 shadow-sm' 
-                              : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:border-slate-300'
-                          }`}
+                            hasAnsweredCurrent || timeLeft <= 0 ? 'cursor-default' : 'cursor-pointer active:scale-[0.98]'
+                          } ${containerClasses}`}
                         >
-                          <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shrink-0 transition-transform ${
-                            isSelected ? 'bg-blue-600 text-white scale-105' : 'border border-slate-300 bg-white'
-                          }`}>
-                            {isSelected && <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />}
+                          <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shrink-0 transition-transform ${indicatorClasses}`}>
+                            {hasAnsweredCurrent && isThisCorrect && (
+                              <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
+                            )}
+                            {hasAnsweredCurrent && isChosen && !isThisCorrect && (
+                              <X className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
+                            )}
                           </div>
 
-                          <span className="text-xs sm:text-sm font-bold leading-snug">{opt}</span>
+                          <span className="text-xs sm:text-sm leading-snug flex-1">{opt}</span>
+
+                          {hasAnsweredCurrent && isThisCorrect && (
+                            <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full shrink-0">
+                              හරි ✔
+                            </span>
+                          )}
+
+                          {hasAnsweredCurrent && isChosen && !isThisCorrect && (
+                            <span className="text-[10px] font-black text-rose-700 bg-rose-100/90 px-2 py-0.5 rounded-full shrink-0">
+                              වැරදියි ✖
+                            </span>
+                          )}
                         </div>
                       );
                     })}
                   </div>
 
+                  {/* වැරදි පිළිතුරක් තෝරාගත් විට යටින් හරි උත්තරය ක්ෂණිකව Highlight කර පෙන්වීම */}
+                  {hasAnsweredCurrent && !isCurrentCorrect && (
+                    <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl sm:rounded-2xl flex items-center gap-2.5 text-amber-950 animate-in fade-in duration-200">
+                      <div className="w-6 h-6 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 font-black text-xs">
+                        💡
+                      </div>
+                      <div className="text-[11px] sm:text-xs leading-tight">
+                        <span className="font-bold text-amber-900">නිවැරදි පිළිතුර: </span>
+                        <strong className="text-emerald-800 font-black">{currentQ.options[currentQ.correct_index]}</strong>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Navigation Buttons */}
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                     <button
                       type="button"
@@ -1029,9 +1167,11 @@ export default function QuizGamePage() {
                         type="button"
                         disabled={timeLeft <= 0}
                         onClick={() => setCurrentIndex(currentIndex + 1)}
-                        className="inline-flex items-center gap-1 px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black shadow-sm active:scale-95"
+                        className={`inline-flex items-center gap-1 px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-white text-xs font-black shadow-sm active:scale-95 transition-all ${
+                          hasAnsweredCurrent ? 'bg-blue-600 hover:bg-blue-500 ring-2 ring-blue-300' : 'bg-slate-800 hover:bg-slate-700'
+                        }`}
                       >
-                        Next <ArrowRight className="w-3 h-3" />
+                        {hasAnsweredCurrent ? "ඊළඟ ප්‍රශ්නය" : "Next"} <ArrowRight className="w-3 h-3" />
                       </button>
                     ) : (
                       <button
@@ -1047,7 +1187,7 @@ export default function QuizGamePage() {
                           </>
                         ) : (
                           <>
-                            <span>Submit</span>
+                            <span>Finish & View Marks</span>
                             <CheckCircle2 className="w-3.5 h-3.5" />
                           </>
                         )}
@@ -1058,28 +1198,70 @@ export default function QuizGamePage() {
               </div>
             )}
 
-            {/* STAGE 5: RESULT SCREEN WITH DETAILED REVIEW */}
+            {/* STAGE 5: RESULT SCREEN (10 න් MARKS, හරි/වැරදි ලැයිස්තුව සමඟ) */}
             {gameState === 'result' && (
               <div className="space-y-4 animate-in fade-in duration-200">
-                <div className="bg-white border-2 border-amber-300 rounded-2xl sm:rounded-[2.5rem] p-5 text-center space-y-2 shadow-sm">
-                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center mx-auto shadow-sm">
-                    <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />
+                
+                {/* Official Scoreboard Card */}
+                <div className="bg-white border-2 border-emerald-300 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-7 text-center space-y-3.5 shadow-md relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-600" />
+
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center mx-auto shadow-md">
+                    <Trophy className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
-                  <h2 className="text-base sm:text-xl font-black text-slate-900">විශිෂ්ටයි {currentUser?.name}! 🎉</h2>
-                  <div className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                    {totalCorrect} <span className="text-base sm:text-xl text-slate-400 font-bold">/ {questions.length}</span>
+                  
+                  <div>
+                    <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-emerald-800 bg-emerald-100 px-3 py-0.5 rounded-full">
+                      විභාග ප්‍රතිඵල පත්‍රය (Result Sheet)
+                    </span>
+                    <h2 className="text-base sm:text-2xl font-black text-slate-900 mt-1">
+                      සුබ පැතුම්, {currentUser?.name}! 🎉
+                    </h2>
+                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                      {subject} • {selectedGrade.label}
+                    </p>
                   </div>
 
-                  <div className="flex items-center justify-center gap-2 pt-1 sm:pt-2">
+                  {/* 10න් Marks Score Box */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 inline-block w-full max-w-xs mx-auto">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                      ලබාගත් මුළු ලකුණු සංඛ්‍යාව
+                    </span>
+                    <div className="text-4xl sm:text-5xl font-black text-emerald-700 tracking-tight my-1">
+                      {totalCorrect} <span className="text-lg sm:text-2xl text-slate-400 font-bold">/ 10</span>
+                    </div>
+                    <span className="text-[11px] font-black text-slate-700 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full inline-block shadow-2xs">
+                      ප්‍රතිශතය: {Math.round((totalCorrect / questions.length) * 100)}%
+                    </span>
+                  </div>
+
+                  {/* Summary Metric Badges */}
+                  <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto text-center pt-1">
+                    <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+                      <p className="text-xs sm:text-sm font-black">{totalCorrect}</p>
+                      <p className="text-[9.5px] font-bold">හරි පිළිතුරු</p>
+                    </div>
+                    <div className="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-900">
+                      <p className="text-xs sm:text-sm font-black">{totalWrong}</p>
+                      <p className="text-[9.5px] font-bold">වැරදි පිළිතුරු</p>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700">
+                      <p className="text-xs sm:text-sm font-black">{totalSkipped}</p>
+                      <p className="text-[9.5px] font-bold">නොලියූ ගණන</p>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-center gap-2 pt-2">
                     <button
                       onClick={() => setGameState('profile')}
-                      className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black shadow-sm active:scale-95"
+                      className="inline-flex items-center gap-1 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black shadow-sm active:scale-95"
                     >
-                      <BrainCircuit className="w-3.5 h-3.5" /> IQ Profile
+                      <BrainCircuit className="w-3.5 h-3.5" /> IQ Profile එක
                     </button>
                     <button
                       onClick={() => setGameState('select-grade')}
-                      className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black shadow-sm active:scale-95"
+                      className="inline-flex items-center gap-1 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black shadow-sm active:scale-95"
                     >
                       <RotateCcw className="w-3.5 h-3.5" /> තවත් වටයක්
                     </button>
@@ -1090,37 +1272,37 @@ export default function QuizGamePage() {
                 <div className="bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-2.5 shadow-sm">
                   <h3 className="text-xs sm:text-sm font-black text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-1.5">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                    පිළිතුරු සමාලෝචනය (Review Answers)
+                    සවිස්තරාත්මක පිළිතුරු සමාලෝචනය (Detailed Review)
                   </h3>
 
-                  <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+                  <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
                     {questions.map((q, idx) => {
                       const userChoice = userAnswers[idx];
                       const isCorrect = userChoice === q.correct_index;
                       return (
-                        <div key={q.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-xs">
+                        <div key={q.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
                           <div className="flex items-start justify-between gap-1.5">
                             <h4 className="font-bold text-slate-900 leading-snug">
                               {idx + 1}. {q.question}
                             </h4>
                             {isCorrect ? (
-                              <span className="text-[9px] sm:text-[10px] font-black text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">
+                              <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md shrink-0 border border-emerald-200">
                                 ✔ හරි
                               </span>
                             ) : (
-                              <span className="text-[9px] sm:text-[10px] font-black text-rose-800 bg-rose-100 px-1.5 py-0.5 rounded shrink-0">
+                              <span className="text-[9.5px] font-black text-rose-800 bg-rose-100 px-2 py-0.5 rounded-md shrink-0 border border-rose-200">
                                 ✖ වැරදියි
                               </span>
                             )}
                           </div>
 
-                          <div className="space-y-0.5 text-[11px] font-semibold">
+                          <div className="space-y-1 text-[11px] font-semibold pt-1 border-t border-slate-200/60">
                             <p className={isCorrect ? 'text-emerald-700' : 'text-rose-600'}>
-                              ඔබේ පිළිතුර: {userChoice !== undefined ? q.options[userChoice] : 'කාලය අවසන් විය'}
+                              ඔබේ පිළිතුර: {userChoice !== undefined ? q.options[userChoice] : 'පිළිතුරු දී නැත'}
                             </p>
                             {!isCorrect && (
-                              <p className="text-slate-800 font-bold bg-amber-50 border border-amber-200 p-1 rounded-md">
-                                නිවැරදි පිළිතුර: {q.options[q.correct_index]}
+                              <p className="text-slate-900 font-bold bg-amber-50 border border-amber-300 p-1.5 rounded-md">
+                                නිවැරදි පිළිතුර: <span className="text-emerald-800">{q.options[q.correct_index]}</span>
                               </p>
                             )}
                           </div>
@@ -1276,7 +1458,7 @@ export default function QuizGamePage() {
               <div>
                 <h3 className="text-base font-black text-slate-900">තරගයට සූදානම් වන්න! 🚀</h3>
                 <p className="text-xs text-slate-500 font-semibold mt-1">
-                  පිළිතුරු ලියා අවසන් වූ පසු ඔබේ ලකුණු සහ නිවැරදි පිළිතුරු සියල්ල ලැබේ!
+                  පිළිතුරක් තෝරන සැනින් හරිද වැරදිද යන්න ශබ්දය සමඟ පෙන්වයි.
                 </p>
               </div>
               <div className="p-2 bg-emerald-50 rounded-xl text-[11px] font-bold text-emerald-800">
@@ -1493,6 +1675,7 @@ export default function QuizGamePage() {
                         type="button"
                         onClick={() => setShowPin(!showPin)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
+                        title={showPin ? "Hide PIN" : "Show PIN"}
                       >
                         {showPin ? <EyeOff className="w-4 h-4 text-emerald-600" /> : <Eye className="w-4 h-4" />}
                       </button>
