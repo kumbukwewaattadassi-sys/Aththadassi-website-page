@@ -11,7 +11,6 @@ import {
   ArrowLeft, 
   RotateCcw, 
   BookOpen, 
-  User, 
   Check, 
   Loader2, 
   AlertCircle,
@@ -20,18 +19,17 @@ import {
   Star,
   Timer,
   ChevronRight,
-  Phone,
   UserCheck,
   BrainCircuit,
   Lock,
   LogOut,
-  KeyRound,
-  ShieldCheck,
-  Calendar,
-  X,
   Eye,
   EyeOff,
-  Volume2
+  User,
+  Phone,
+  Calendar,
+  KeyRound,
+  X
 } from 'lucide-react';
 
 interface Question {
@@ -39,6 +37,7 @@ interface Question {
   question: string;
   options: string[];
   correct_index: number;
+  explanation?: string;
 }
 
 interface ScoreRecord {
@@ -60,23 +59,45 @@ const GRADES = [
   { label: "ශ්‍රේණිය 11", value: "Grade 11" }
 ];
 
-const CORE_SUBJECTS = [
+// Grade 6 - 9 සඳහා විෂයයන් 13
+const SUBJECTS_GRADE_6_TO_9 = [
   "විද්‍යාව", 
   "ගණිතය", 
   "ඉතිහාසය", 
+  "තොරතුරු තාක්ෂණය (ICT)",
   "සිංහල", 
   "ඉංග්‍රීසි", 
-  "තොරතුරු තාක්ෂණය (ICT)"
-];
-
-const BASKET_SUBJECTS = [
-  "වාණිජ සහ ගිණුම්කරණය",
-  "චිත්‍ර",
   "සංගීතය",
-  "සාහිත්‍ය රසාස්වාදය"
+  "චිත්‍ර",
+  "පුරවැසි අධ්‍යාපනය",
+  "සෞඛ්‍ය හා ශාරීරික අධ්‍යාපනය",
+  "දේශීය නැටුම්",
+  "භූගෝල විද්‍යාව",
+  "දෙමළ (දෙවන භාෂාව)"
 ];
 
-const ALL_SUBJECTS = [...CORE_SUBJECTS, ...BASKET_SUBJECTS];
+// Grade 10 - 11 සඳහා ප්‍රධාන හා කාණ්ඩ විෂයයන් 17 ම
+const SUBJECTS_GRADE_10_TO_11 = [
+  "විද්‍යාව", 
+  "ගණිතය", 
+  "තොරතුරු තාක්ෂණය (ICT)",
+  "සිංහල", 
+  "ඉංග්‍රීසි", 
+  "ඉතිහාසය", 
+  "පුරවැසි අධ්‍යාපනය",
+  "භූගෝල විද්‍යාව",
+  "වාණිජ සහ ගිණුම්කරණය",
+  "සංගීතය",
+  "චිත්‍ර",
+  "දේශීය නැටුම්",
+  "සාහිත්‍ය රසාස්වාදය",
+  "සෞඛ්‍ය හා ශාරීරික අධ්‍යාපනය",
+  "ගෘහ විද්‍යාව",
+  "ආගම",
+  "දෙමළ (දෙවන භාෂාව)"
+];
+
+const ALL_SUBJECTS = Array.from(new Set([...SUBJECTS_GRADE_6_TO_9, ...SUBJECTS_GRADE_10_TO_11]));
 const QUIZ_TIME_SECONDS = 600; // විනාඩි 10
 
 const MONTH_NAMES = [
@@ -94,7 +115,7 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-// Browser Audio API Helper (බාහිර ශ්‍රව්‍ය ලිපිගොනු අවශ්‍ය නොවේ)
+// Web Audio API Helper
 function playFeedbackSound(isCorrect: boolean) {
   try {
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -102,7 +123,6 @@ function playFeedbackSound(isCorrect: boolean) {
     const ctx = new AudioContextClass();
 
     if (isCorrect) {
-      // Pleasant Success Major Chime
       const now = ctx.currentTime;
       const osc1 = ctx.createOscillator();
       const osc2 = ctx.createOscillator();
@@ -111,11 +131,11 @@ function playFeedbackSound(isCorrect: boolean) {
       osc1.type = 'triangle';
       osc2.type = 'sine';
 
-      osc1.frequency.setValueAtTime(523.25, now); // C5
-      osc1.frequency.exponentialRampToValueAtTime(659.25, now + 0.12); // E5
+      osc1.frequency.setValueAtTime(523.25, now);
+      osc1.frequency.exponentialRampToValueAtTime(659.25, now + 0.12);
 
       osc2.frequency.setValueAtTime(659.25, now + 0.12);
-      osc2.frequency.exponentialRampToValueAtTime(783.99, now + 0.28); // G5
+      osc2.frequency.exponentialRampToValueAtTime(783.99, now + 0.28);
 
       gain.gain.setValueAtTime(0.2, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
@@ -129,7 +149,6 @@ function playFeedbackSound(isCorrect: boolean) {
       osc2.start(now + 0.12);
       osc2.stop(now + 0.35);
     } else {
-      // Gentle Low Error Thud
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -147,9 +166,7 @@ function playFeedbackSound(isCorrect: boolean) {
       osc.start(now);
       osc.stop(now + 0.22);
     }
-  } catch {
-    // Sound unavailable or blocked by browser policy
-  }
+  } catch {}
 }
 
 function calculateDynamicIQ(history: ScoreRecord[]) {
@@ -215,7 +232,7 @@ export default function QuizGamePage() {
   const [currentUser, setCurrentUser] = useState<{ name: string; phone: string; pin: string; birth_date?: string } | null>(null);
   const [studentHistory, setStudentHistory] = useState<ScoreRecord[]>([]);
 
-  // Auth Modal States
+  // Simple Auth Modal States
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-pin' | 'set-new-pin'>('login');
   
@@ -240,7 +257,7 @@ export default function QuizGamePage() {
 
   // Gameplay
   const [selectedGrade, setSelectedGrade] = useState(GRADES[4]);
-  const [subject, setSubject] = useState(CORE_SUBJECTS[0]);
+  const [subject, setSubject] = useState(SUBJECTS_GRADE_10_TO_11[0]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: number }>({});
@@ -257,11 +274,17 @@ export default function QuizGamePage() {
 
   // Leaderboard (For PC View)
   const [leaderboard, setLeaderboard] = useState<ScoreRecord[]>([]);
-  const [leaderboardSubject, setLeaderboardSubject] = useState(CORE_SUBJECTS[0]);
+  const [leaderboardSubject, setLeaderboardSubject] = useState(SUBJECTS_GRADE_10_TO_11[0]);
 
-  const availableSubjects = (selectedGrade.value === "Grade 10" || selectedGrade.value === "Grade 11")
-    ? ALL_SUBJECTS
-    : CORE_SUBJECTS;
+  // Grade 6-9 සඳහා විෂයයන් 13 සහ Grade 10-11 සඳහා විෂයයන් 17 මාරු කිරීම
+  const isJuniorGrade = ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'].includes(selectedGrade.value);
+  const availableSubjects = isJuniorGrade ? SUBJECTS_GRADE_6_TO_9 : SUBJECTS_GRADE_10_TO_11;
+
+  useEffect(() => {
+    if (!availableSubjects.includes(subject)) {
+      setSubject(availableSubjects[0]);
+    }
+  }, [selectedGrade, availableSubjects, subject]);
 
   const years = useMemo(() => {
     const list = [];
@@ -289,7 +312,7 @@ export default function QuizGamePage() {
     };
   }, [showAuthModal, showCountdownModal]);
 
-  // Session Management
+  // Session Management: පිටුවට ආපු ගමන් Session පරීක්ෂා කිරීම
   useEffect(() => {
     const savedSession = localStorage.getItem('school_quiz_student_session');
     if (savedSession) {
@@ -338,7 +361,7 @@ export default function QuizGamePage() {
     }
   };
 
-  // Student Score History Fetch
+  // Student History Fetch
   const fetchStudentHistory = async (phone: string) => {
     try {
       const cleanPhone = phone.trim();
@@ -383,7 +406,7 @@ export default function QuizGamePage() {
     };
   }, [gameState]);
 
-  // Auth Handlers
+  // Auth Submit Handler
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -414,7 +437,7 @@ export default function QuizGamePage() {
           .maybeSingle();
 
         if (error || !userRecord) {
-          setAuthError("මෙම දුරකථන අංකය ලියාපදිංචි කර නොමැත. 'නව ශිෂ්‍යයෙක්' තෝරා ලියාපදිංචි වන්න.");
+          setAuthError("මෙම දුරකථන අංකය ලියාපදිංචි කර නොමැත. 'Sign Up' තෝරා ලියාපදිංචි වන්න.");
           setAuthLoading(false);
           return;
         }
@@ -458,7 +481,7 @@ export default function QuizGamePage() {
           .maybeSingle();
 
         if (checkUser) {
-          setAuthError("මෙම දුරකථන අංකය දැනටමත් ඇත. 'Login' තෝරා ඇතුළු වන්න.");
+          setAuthError("මෙම දුරකථන අංකය දැනටමත් ඇත. 'Log In' තෝරා ඇතුළු වන්න.");
           setAuthLoading(false);
           return;
         }
@@ -510,7 +533,7 @@ export default function QuizGamePage() {
         }
 
         setAuthMode('set-new-pin');
-        setAuthSuccess("උපන් දිනය තහවුරු විය! දැන් නව 4-Digit PIN අංකයක් ඇතුළත් කරන්න.");
+        setAuthSuccess("උපන් දිනය තහවුරු විය! දැන් අලුත් 4-Digit PIN අංකයක් ලබාදෙන්න.");
 
       } else if (authMode === 'set-new-pin') {
         if (newPin.trim().length !== 4) {
@@ -530,7 +553,7 @@ export default function QuizGamePage() {
           return;
         }
 
-        setAuthSuccess("PIN අංකය සාර්ථකව වෙනස් විය! දැන් නව PIN එකෙන් Login වන්න.");
+        setAuthSuccess("PIN අංකය සාර්ථකව වෙනස් විය! දැන් අලුත් PIN එකෙන් Login වන්න.");
         setFormPin(newPin.trim());
         setAuthMode('login');
       }
@@ -550,8 +573,8 @@ export default function QuizGamePage() {
     setFormPin('');
     setFormName('');
     setNewPin('');
-    setShowAuthModal(true);
     setAuthMode('login');
+    setShowAuthModal(true);
   };
 
   const handleStartQuiz = async (e: React.FormEvent) => {
@@ -575,7 +598,7 @@ export default function QuizGamePage() {
       if (data && data.length > 0) {
         const randomQuestions = shuffleArray(data).slice(0, 10);
 
-        const formattedQuestions: Question[] = randomQuestions.map((item: { id: string; question: string; options: string | string[]; correct_index: number | string }) => {
+        const formattedQuestions: Question[] = randomQuestions.map((item: any) => {
           const rawOptions: string[] = typeof item.options === 'string'
             ? JSON.parse(item.options)
             : item.options;
@@ -590,6 +613,7 @@ export default function QuizGamePage() {
             question: item.question,
             options: shuffledOptions,
             correct_index: newCorrectIndex >= 0 ? newCorrectIndex : 0,
+            explanation: item.explanation
           };
         });
 
@@ -627,15 +651,13 @@ export default function QuizGamePage() {
   // Instant Feedback: උත්තරයක් ක්ලික් කළ සැනින් Sound & Vibration සමඟ හරි/වැරදි පෙන්වීම
   const handleSelectOption = (optionIndex: number) => {
     if (timeLeft <= 0 || submitting) return;
-    if (userAnswers[currentIndex] !== undefined) return; // ඒ ප්‍රශ්නයට දැනටමත් උත්තර දී ඇත්නම් වෙනස් කළ නොහැක
+    if (userAnswers[currentIndex] !== undefined) return; // දැනටමත් පිළිතුරු දී ඇත්නම් වෙනස් කළ නොහැක
 
     const currentQ = questions[currentIndex];
     const isCorrect = optionIndex === currentQ.correct_index;
 
-    // ශබ්දය වාදනය කිරීම (Web Audio API)
     playFeedbackSound(isCorrect);
 
-    // වැරදි නම්: Vibration + Shake effect
     if (!isCorrect) {
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
         try {
@@ -736,7 +758,7 @@ export default function QuizGamePage() {
   const isCurrentCorrect = hasAnsweredCurrent && userAnswers[currentIndex] === currentQ?.correct_index;
 
   return (
-    <div className="min-h-screen bg-[#F0FDF4]/70 pt-24 sm:pt-28 lg:pt-32 pb-10 px-3 sm:px-6 lg:px-8 max-w-xl lg:max-w-7xl mx-auto transform-gpu subpixel-antialiased">
+    <div className="min-h-screen bg-[#F0FDF4]/70 pt-20 sm:pt-24 lg:pt-28 pb-10 px-3 sm:px-6 lg:px-8 max-w-xl lg:max-w-7xl mx-auto transform-gpu subpixel-antialiased">
       <div className="w-full space-y-3.5 sm:space-y-6">
 
         {/* Global Gamified Header */}
@@ -751,7 +773,7 @@ export default function QuizGamePage() {
                   Aththadassi Quest
                 </span>
                 <span className="inline-flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-bold text-amber-600">
-                  <Flame className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-500 text-amber-500" /> Live Arena
+                  <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" /> Live Arena
                 </span>
               </div>
               <h1 className="text-xs sm:text-2xl font-black text-slate-900 truncate tracking-tight">
@@ -803,7 +825,7 @@ export default function QuizGamePage() {
                           {currentUser?.name || "ශිෂ්‍ය ගිණුම"}
                         </h2>
                         <span className="text-[9px] sm:text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                          <ShieldCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-600" /> Secured
+                          Verified
                         </span>
                       </div>
                       <p className="text-[11px] sm:text-xs text-slate-400 font-mono mt-0.5">{currentUser?.phone}</p>
@@ -941,7 +963,8 @@ export default function QuizGamePage() {
                       key={g.value}
                       onClick={() => {
                         setSelectedGrade(g);
-                        setSubject(CORE_SUBJECTS[0]);
+                        const isJunior = ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'].includes(g.value);
+                        setSubject(isJunior ? SUBJECTS_GRADE_6_TO_9[0] : SUBJECTS_GRADE_10_TO_11[0]);
                         setGameState('setup');
                       }}
                       className="group flex items-center justify-between p-3.5 rounded-xl sm:rounded-2xl bg-white border border-slate-200 hover:border-rose-400 hover:bg-rose-50/20 shadow-xs cursor-pointer transition-all active:scale-[0.98] relative overflow-hidden"
@@ -991,9 +1014,14 @@ export default function QuizGamePage() {
 
                 <form onSubmit={handleStartQuiz} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center gap-1">
-                      <BookOpen className="w-3.5 h-3.5 text-emerald-700" /> විෂය (Subject)
-                    </label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1">
+                        <BookOpen className="w-3.5 h-3.5 text-emerald-700" /> විෂය (Subject)
+                      </label>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        {isJuniorGrade ? 'විෂයයන් 13 ක් ඇත' : 'කාණ්ඩ විෂයයන් ඇතුළුව 17 ක් ඇත'}
+                      </span>
+                    </div>
                     <select
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
@@ -1024,7 +1052,7 @@ export default function QuizGamePage() {
               </div>
             )}
 
-            {/* STAGE 4: PLAYING FRAME WITH INSTANT FEEDBACK */}
+            {/* STAGE 4: PLAYING FRAME WITH INSTANT FEEDBACK & EXPLANATION BOX */}
             {gameState === 'playing' && questions.length > 0 && (
               <div className="space-y-3 sm:space-y-4">
                 
@@ -1085,17 +1113,14 @@ export default function QuizGamePage() {
                       const isChosen = userChoice === optIdx;
                       const isThisCorrect = optIdx === currentQ.correct_index;
 
-                      // Style Determination:
                       let containerClasses = "bg-slate-50/70 border-slate-200 text-slate-700 hover:border-slate-300";
                       let indicatorClasses = "border-slate-300 bg-white text-transparent";
 
                       if (hasAnsweredCurrent) {
                         if (isThisCorrect) {
-                          // නිවැරදි පිළිතුර (කොළ පාටින් Highlight)
                           containerClasses = "bg-emerald-50 border-emerald-500 text-emerald-950 font-black shadow-xs";
                           indicatorClasses = "bg-emerald-600 text-white border-emerald-600 scale-105";
                         } else if (isChosen) {
-                          // තෝරාගත් පිළිතුර වැරදි නම් (රතු පාටින් Mark)
                           containerClasses = "bg-rose-50 border-rose-500 text-rose-950 font-black shadow-xs";
                           indicatorClasses = "bg-rose-600 text-white border-rose-600 scale-105";
                         } else {
@@ -1138,21 +1163,25 @@ export default function QuizGamePage() {
                     })}
                   </div>
 
-                  {/* වැරදි පිළිතුරක් තෝරාගත් විට යටින් හරි උත්තරය ක්ෂණිකව Highlight කර පෙන්වීම */}
-                  {hasAnsweredCurrent && !isCurrentCorrect && (
-                    <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl sm:rounded-2xl flex items-center gap-2.5 text-amber-950 animate-in fade-in duration-200">
-                      <div className="w-6 h-6 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 font-black text-xs">
-                        💡
-                      </div>
-                      <div className="text-[11px] sm:text-xs leading-tight">
-                        <span className="font-bold text-amber-900">නිවැරදි පිළිතුර: </span>
-                        <strong className="text-emerald-800 font-black">{currentQ.options[currentQ.correct_index]}</strong>
+                  {/* Short Note Explanation Box */}
+                  {hasAnsweredCurrent && (
+                    <div className="mt-3 p-3 bg-gradient-to-r from-emerald-50/90 to-teal-50/80 border border-emerald-300 rounded-xl text-xs text-slate-700 flex items-start gap-2 animate-in fade-in duration-200">
+                      <span className="text-emerald-700 font-black text-sm shrink-0">📌</span>
+                      <div className="leading-relaxed">
+                        <strong className="text-emerald-900 font-bold">කෙටි සටහන (Short Note): </strong>
+                        {currentQ.explanation ? (
+                          currentQ.explanation
+                        ) : (
+                          <span>
+                            මෙම ප්‍රශ්නයේ නිවැරදි පිළිතුර වන්නේ <strong>&apos;{currentQ.options[currentQ.correct_index]}&apos;</strong> යන්නයි. විෂය කරුණුවලට අදාළ නිවැරදි සිද්ධාන්තය මතකයේ රඳවා ගන්න.
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
 
-                  {/* Navigation Buttons */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  {/* Navigation Buttons: උත්තරයක් දෙන තුරු Next button එක Disabled කර ඇත (No Skip) */}
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                     <button
                       type="button"
                       disabled={currentIndex === 0 || submitting || timeLeft <= 0}
@@ -1165,20 +1194,26 @@ export default function QuizGamePage() {
                     {currentIndex < questions.length - 1 ? (
                       <button
                         type="button"
-                        disabled={timeLeft <= 0}
+                        disabled={!hasAnsweredCurrent || timeLeft <= 0}
                         onClick={() => setCurrentIndex(currentIndex + 1)}
                         className={`inline-flex items-center gap-1 px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-white text-xs font-black shadow-sm active:scale-95 transition-all ${
-                          hasAnsweredCurrent ? 'bg-blue-600 hover:bg-blue-500 ring-2 ring-blue-300' : 'bg-slate-800 hover:bg-slate-700'
+                          hasAnsweredCurrent 
+                            ? 'bg-blue-600 hover:bg-blue-500 ring-2 ring-blue-300 cursor-pointer' 
+                            : 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60'
                         }`}
                       >
-                        {hasAnsweredCurrent ? "ඊළඟ ප්‍රශ්නය" : "Next"} <ArrowRight className="w-3 h-3" />
+                        <span>ඊළඟ ප්‍රශ්නය</span> <ArrowRight className="w-3 h-3" />
                       </button>
                     ) : (
                       <button
                         type="button"
-                        disabled={submitting}
+                        disabled={!hasAnsweredCurrent || submitting}
                         onClick={handleFinishQuiz}
-                        className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-sm disabled:opacity-50 active:scale-95"
+                        className={`inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-white text-xs font-black shadow-sm active:scale-95 transition-all ${
+                          hasAnsweredCurrent 
+                            ? 'bg-emerald-600 hover:bg-emerald-500 cursor-pointer' 
+                            : 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60'
+                        }`}
                       >
                         {submitting ? (
                           <>
@@ -1268,14 +1303,14 @@ export default function QuizGamePage() {
                   </div>
                 </div>
 
-                {/* Review Questions & Answers */}
+                {/* Review Questions & Answers with Explanations */}
                 <div className="bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-2.5 shadow-sm">
                   <h3 className="text-xs sm:text-sm font-black text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-1.5">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
                     සවිස්තරාත්මක පිළිතුරු සමාලෝචනය (Detailed Review)
                   </h3>
 
-                  <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                  <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
                     {questions.map((q, idx) => {
                       const userChoice = userAnswers[idx];
                       const isCorrect = userChoice === q.correct_index;
@@ -1305,6 +1340,12 @@ export default function QuizGamePage() {
                                 නිවැරදි පිළිතුර: <span className="text-emerald-800">{q.options[q.correct_index]}</span>
                               </p>
                             )}
+                          </div>
+
+                          {/* Review Short Note Box */}
+                          <div className="mt-1.5 p-2 bg-emerald-50/70 border border-emerald-200 rounded-lg text-[10.5px] text-slate-600">
+                            <span className="font-bold text-emerald-900">📌 Short Note: </span>
+                            {q.explanation || `නිවැරදි පිළිතුර වන්නේ '${q.options[q.correct_index]}' වේ.`}
                           </div>
                         </div>
                       );
@@ -1407,7 +1448,7 @@ export default function QuizGamePage() {
 
                     </div>
 
-                    {/* 4th Place Onwards Stack */}
+                    {/* 4th Place Onwards */}
                     {restRanks.length > 0 && (
                       <div className="space-y-1 pt-1.5 border-t border-slate-100">
                         {restRanks.slice(0, 3).map((item, idx) => {
@@ -1448,7 +1489,252 @@ export default function QuizGamePage() {
 
         </main>
 
-        {/* ================= 3-SECOND READY COUNTDOWN POPUP ================= */}
+        {/* ================= NORMAL, CLEAN & SMOOTH AUTH MODAL ================= */}
+        {showAuthModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="bg-white rounded-3xl border border-slate-100 max-w-sm sm:max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+              
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+                    {authMode === 'login' && 'ගිණුමට පිවිසෙන්න (Login)'}
+                    {authMode === 'register' && 'නව ගිණුමක් සාදන්න (Sign Up)'}
+                    {authMode === 'forgot-pin' && 'PIN අංකය නැවත ලබාගන්න'}
+                    {authMode === 'set-new-pin' && 'නව PIN අංකය සකසන්න'}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {authMode === 'login' && 'ඔබේ දුරකථන අංකය සහ PIN එක ඇතුළත් කරන්න'}
+                    {authMode === 'register' && 'තත්පර කිහිපයකින් ගිණුම සාදා Quiz එක ආරම්භ කරන්න'}
+                    {authMode === 'forgot-pin' && 'උපන් දිනය තහවුරු කර PIN එක මාරු කරන්න'}
+                    {authMode === 'set-new-pin' && 'මතක තබාගත හැකි ඉලක්කම් 4ක PIN එකක් දෙන්න'}
+                  </p>
+                </div>
+                {currentUser && (
+                  <button
+                    onClick={() => setShowAuthModal(false)}
+                    className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Minimal Clean Tabs */}
+              {(authMode === 'login' || authMode === 'register') && (
+                <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('login'); setAuthError(null); setAuthSuccess(null); }}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                      authMode === 'login' 
+                        ? 'bg-white text-slate-900 shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    Log In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('register'); setAuthError(null); setAuthSuccess(null); }}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                      authMode === 'register' 
+                        ? 'bg-white text-slate-900 shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              )}
+
+              {/* Alerts */}
+              {authError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-xs font-medium flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{authError}</span>
+                </div>
+              )}
+
+              {authSuccess && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-xs font-medium flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{authSuccess}</span>
+                </div>
+              )}
+
+              {/* Form */}
+              <form onSubmit={handleAuthSubmit} className="space-y-3.5">
+                
+                {authMode === 'register' && (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-slate-400" /> ඔබගේ නම (Full Name)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="උදා: කසුන් පෙරේරා"
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:bg-white rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none transition-all"
+                    />
+                  </div>
+                )}
+
+                {authMode !== 'set-new-pin' && (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-slate-400" /> දුරකථන අංකය (Mobile Number)
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="උදා: 0712345678"
+                      value={formPhone}
+                      onChange={(e) => setFormPhone(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:bg-white rounded-xl px-3.5 py-2.5 text-slate-900 text-sm focus:outline-none transition-all font-mono"
+                    />
+                  </div>
+                )}
+
+                {(authMode === 'register' || authMode === 'forgot-pin') && (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" /> උපන් දිනය (Birthday)
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <select
+                        value={birthYear}
+                        onChange={(e) => setBirthYear(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-600 cursor-pointer"
+                      >
+                        {years.map(y => <option key={y} value={y}>{y} වසර</option>)}
+                      </select>
+
+                      <select
+                        value={birthMonth}
+                        onChange={(e) => setBirthMonth(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-600 cursor-pointer"
+                      >
+                        {MONTH_NAMES.map((m, idx) => (
+                          <option key={idx} value={(idx + 1).toString().padStart(2, '0')}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={birthDay}
+                        onChange={(e) => setBirthDay(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-600 cursor-pointer"
+                      >
+                        {days.map(d => <option key={d} value={d}>{d} දින</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {(authMode === 'login' || authMode === 'register') && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                        <KeyRound className="w-3.5 h-3.5 text-slate-400" /> 4-Digit PIN අංකය
+                      </label>
+                      {authMode === 'login' && (
+                        <button
+                          type="button"
+                          onClick={() => { setAuthMode('forgot-pin'); setAuthError(null); setAuthSuccess(null); }}
+                          className="text-[11px] font-bold text-emerald-700 hover:underline"
+                        >
+                          PIN අමතකද?
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showPin ? "text" : "password"}
+                        maxLength={4}
+                        required
+                        placeholder={showPin ? "1234" : "••••"}
+                        value={formPin}
+                        onChange={(e) => setFormPin(e.target.value.replace(/\D/g, ''))}
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:bg-white rounded-xl pl-4 pr-11 py-2.5 text-slate-900 font-bold text-center tracking-widest text-base focus:outline-none font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPin(!showPin)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                      >
+                        {showPin ? <EyeOff className="w-4 h-4 text-emerald-600" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {authMode === 'set-new-pin' && (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-slate-400" /> නව 4-Digit PIN අංකය (New PIN)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPin ? "text" : "password"}
+                        maxLength={4}
+                        required
+                        placeholder={showPin ? "1234" : "••••"}
+                        value={newPin}
+                        onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:bg-white rounded-xl pl-4 pr-11 py-2.5 text-slate-900 font-bold text-center tracking-widest text-base focus:outline-none font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPin(!showPin)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                      >
+                        {showPin ? <EyeOff className="w-4 h-4 text-emerald-600" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold py-3 rounded-xl text-sm shadow-sm transition-all flex items-center justify-center gap-2 mt-4 cursor-pointer"
+                >
+                  {authLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>පරීක්ෂා කරමින් පවතී...</span>
+                    </>
+                  ) : (
+                    <>
+                      {authMode === 'login' && <span>Log In</span>}
+                      {authMode === 'register' && <span>Sign Up</span>}
+                      {authMode === 'forgot-pin' && <span>තහවුරු කරන්න</span>}
+                      {authMode === 'set-new-pin' && <span>PIN එක සුරකින්න</span>}
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+
+                {(authMode === 'forgot-pin' || authMode === 'set-new-pin') && (
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('login'); setAuthError(null); setAuthSuccess(null); }}
+                    className="w-full text-center text-xs font-bold text-slate-500 hover:text-slate-800 pt-1"
+                  >
+                    ← නැවත Log In වෙත යන්න
+                  </button>
+                )}
+              </form>
+
+            </div>
+          </div>
+        )}
+
+        {/* 3-SECOND COUNTDOWN MODAL */}
         {showCountdownModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
             <div className="bg-white rounded-3xl border-2 border-emerald-300 max-w-sm w-full p-6 text-center space-y-3.5 shadow-2xl">
@@ -1464,265 +1750,6 @@ export default function QuizGamePage() {
               <div className="p-2 bg-emerald-50 rounded-xl text-[11px] font-bold text-emerald-800">
                 ⏳ සම්පූර්ණ කාලය: විනාඩි 10 යි
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= SECURE AUTH POPUP ================= */}
-        {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
-            <div className="bg-white rounded-[2rem] border-2 border-emerald-100 max-w-sm sm:max-w-md w-full p-4 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 max-h-[92vh] overflow-y-auto">
-              
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 sm:pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black">
-                    <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700" />
-                  </div>
-                  <h3 className="text-sm sm:text-base font-black text-slate-900">
-                    {authMode === 'login' && 'ශිෂ්‍ය පිවිසුම (Login)'}
-                    {authMode === 'register' && 'නව ශිෂ්‍ය ලියාපදිංචිය'}
-                    {authMode === 'forgot-pin' && 'PIN අංකය නැවත ලබා ගැනීම'}
-                    {authMode === 'set-new-pin' && 'නව PIN අංකයක් සැකසීම'}
-                  </h3>
-                </div>
-
-                {currentUser && (
-                  <button
-                    onClick={() => setShowAuthModal(false)}
-                    className="p-1 rounded-full text-slate-400 hover:bg-slate-100"
-                  >
-                    <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
-                )}
-              </div>
-
-              {(authMode === 'login' || authMode === 'register') && (
-                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode('login');
-                      setAuthError(null);
-                      setAuthSuccess(null);
-                    }}
-                    className={`py-1.5 sm:py-2 rounded-lg text-xs font-black transition-all ${
-                      authMode === 'login' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    දැනටමත් ගිණුමක් ඇත
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode('register');
-                      setAuthError(null);
-                      setAuthSuccess(null);
-                    }}
-                    className={`py-1.5 sm:py-2 rounded-lg text-xs font-black transition-all ${
-                      authMode === 'register' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    නව ශිෂ්‍යයෙක් (Register)
-                  </button>
-                </div>
-              )}
-
-              {authError && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-800 p-2.5 sm:p-3 rounded-xl text-xs font-bold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{authError}</span>
-                </div>
-              )}
-
-              {authSuccess && (
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-2.5 sm:p-3 rounded-xl text-xs font-bold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>{authSuccess}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleAuthSubmit} className="space-y-3 sm:space-y-3.5">
-                
-                {authMode === 'register' && (
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center gap-1">
-                      <User className="w-3.5 h-3.5 text-emerald-700" /> ඔබගේ සම්පූර්ණ නම (Your Name)
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="උදා: කසුන් පෙරේරා"
-                      value={formName}
-                      onChange={(e) => setFormName(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 sm:px-4 py-2 sm:py-2.5 text-slate-900 font-bold text-xs sm:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white"
-                    />
-                  </div>
-                )}
-
-                {authMode !== 'set-new-pin' && (
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5 text-emerald-700" /> දුරකථන අංකය (Mobile Number)
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="උදා: 0712345678"
-                      value={formPhone}
-                      onChange={(e) => setFormPhone(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 sm:px-4 py-2 sm:py-2.5 text-slate-900 font-bold text-xs sm:text-sm focus:outline-none focus:border-emerald-600 focus:bg-white font-mono"
-                    />
-                  </div>
-                )}
-
-                {(authMode === 'register' || authMode === 'forgot-pin') && (
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-emerald-700" /> උපන් දිනය (Select Birth Date)
-                    </label>
-                    
-                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                      <select
-                        value={birthYear}
-                        onChange={(e) => setBirthYear(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1.5 sm:px-2 sm:py-2 text-[11px] sm:text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-600 cursor-pointer"
-                      >
-                        {years.map(y => <option key={y} value={y}>{y} වසර</option>)}
-                      </select>
-
-                      <select
-                        value={birthMonth}
-                        onChange={(e) => setBirthMonth(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1.5 sm:px-2 sm:py-2 text-[11px] sm:text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-600 cursor-pointer"
-                      >
-                        {MONTH_NAMES.map((m, idx) => (
-                          <option key={idx} value={(idx + 1).toString().padStart(2, '0')}>
-                            {m}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        value={birthDay}
-                        onChange={(e) => setBirthDay(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1.5 sm:px-2 sm:py-2 text-[11px] sm:text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-600 cursor-pointer"
-                      >
-                        {days.map(d => <option key={d} value={d}>{d} දින</option>)}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {(authMode === 'login' || authMode === 'register') && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1">
-                        <KeyRound className="w-3.5 h-3.5 text-emerald-700" /> රහස්‍ය 4-Digit PIN
-                      </label>
-                      {authMode === 'login' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAuthMode('forgot-pin');
-                            setAuthError(null);
-                            setAuthSuccess(null);
-                          }}
-                          className="text-[10.5px] font-bold text-blue-600 hover:underline"
-                        >
-                          PIN අමතකද?
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="relative">
-                      <input
-                        type={showPin ? "text" : "password"}
-                        maxLength={4}
-                        required
-                        placeholder={showPin ? "1234" : "••••"}
-                        value={formPin}
-                        onChange={(e) => setFormPin(e.target.value.replace(/\D/g, ''))}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-11 py-2 sm:py-2.5 text-slate-900 font-black text-center tracking-widest text-sm sm:text-base focus:outline-none focus:border-emerald-600 focus:bg-white font-mono"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPin(!showPin)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
-                        title={showPin ? "Hide PIN" : "Show PIN"}
-                      >
-                        {showPin ? <EyeOff className="w-4 h-4 text-emerald-600" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {authMode === 'set-new-pin' && (
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center gap-1">
-                      <KeyRound className="w-3.5 h-3.5 text-emerald-700" /> නව 4-Digit PIN අංකය (New PIN)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPin ? "text" : "password"}
-                        maxLength={4}
-                        required
-                        placeholder={showPin ? "1234" : "••••"}
-                        value={newPin}
-                        onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-11 py-2 sm:py-2.5 text-slate-900 font-black text-center tracking-widest text-sm sm:text-base focus:outline-none focus:border-emerald-600 focus:bg-white font-mono"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPin(!showPin)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
-                        title={showPin ? "Hide PIN" : "Show PIN"}
-                      >
-                        {showPin ? <EyeOff className="w-4 h-4 text-emerald-600" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-black py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm shadow-sm transition-all flex items-center justify-center gap-2 mt-3 sm:mt-4 transform-gpu"
-                >
-                  {authLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>පරීක්ෂා කරමින් පවතී...</span>
-                    </>
-                  ) : (
-                    <>
-                      {authMode === 'login' && <span>ගිණුමට පිවිසෙන්න (Login)</span>}
-                      {authMode === 'register' && <span>ලියාපදිංචි වී පිවිසෙන්න</span>}
-                      {authMode === 'forgot-pin' && <span>උපන් දිනය තහවුරු කරන්න</span>}
-                      {authMode === 'set-new-pin' && <span>නව PIN අංකය සුරකින්න</span>}
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-
-                {(authMode === 'forgot-pin' || authMode === 'set-new-pin') && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode('login');
-                      setAuthError(null);
-                      setAuthSuccess(null);
-                    }}
-                    className="w-full text-center text-xs font-bold text-slate-500 hover:text-slate-800 pt-1.5"
-                  >
-                    ← නැවත Login වෙත යන්න
-                  </button>
-                )}
-              </form>
-
-              <div className="pt-1.5 text-center text-[10px] text-slate-400">
-                ⭐ ඔබගේ පිවිසුම මෙම උපාංගයේ ස්වයංක්‍රීයව සුරැකී පවතී.
-              </div>
-
             </div>
           </div>
         )}
