@@ -30,8 +30,7 @@ import {
   Calendar,
   KeyRound,
   X,
-  Sparkles,
-  PauseCircle
+  Sparkles
 } from 'lucide-react';
 
 interface Question {
@@ -116,49 +115,45 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
+// ── MODERN & SWEET SOUND EFFECTS (Web Audio API) ──
 function playFeedbackSound(isCorrect: boolean) {
   try {
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
     const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
 
     if (isCorrect) {
-      const now = ctx.currentTime;
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const gain = ctx.createGain();
+      // 🎶 Beautiful Positive Major Chime (E5 -> G5 -> C6)
+      const notes = [659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
 
-      osc1.type = 'triangle';
-      osc2.type = 'sine';
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + (idx * 0.08));
 
-      osc1.frequency.setValueAtTime(523.25, now);
-      osc1.frequency.exponentialRampToValueAtTime(659.25, now + 0.12);
+        gain.gain.setValueAtTime(0, now + (idx * 0.08));
+        gain.gain.linearRampToValueAtTime(0.18, now + (idx * 0.08) + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + (idx * 0.08) + 0.35);
 
-      osc2.frequency.setValueAtTime(659.25, now + 0.12);
-      osc2.frequency.exponentialRampToValueAtTime(783.99, now + 0.28);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
 
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-
-      osc1.connect(gain);
-      osc2.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc1.start(now);
-      osc1.stop(now + 0.15);
-      osc2.start(now + 0.12);
-      osc2.stop(now + 0.35);
+        osc.start(now + (idx * 0.08));
+        osc.stop(now + (idx * 0.08) + 0.35);
+      });
     } else {
-      const now = ctx.currentTime;
+      // 🎵 Soft Subtle Thud / Bass Drop (Not annoying, no harsh buzzing)
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150, now);
-      osc.frequency.linearRampToValueAtTime(80, now + 0.22);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(85, now + 0.22);
 
-      gain.gain.setValueAtTime(0.25, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -284,9 +279,6 @@ export default function QuizGamePage() {
   const [submitting, setSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const [notesMap, setNotesMap] = useState<{ [key: number]: string }>({});
-  const [loadingAiNote, setLoadingAiNote] = useState(false);
-
   const [isShaking, setIsShaking] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState(QUIZ_TIME_SECONDS);
@@ -397,10 +389,9 @@ export default function QuizGamePage() {
     fetchLeaderboardData(leaderboardSubject);
   }, [leaderboardSubject]);
 
+  // ── TIMER (NO PAUSE: CONTINUOUS COUNTDOWN DURING QUIZ) ──
   useEffect(() => {
-    const isCurrentAnswered = userAnswers[currentIndex] !== undefined;
-
-    if (gameState === 'playing' && !isCurrentAnswered) {
+    if (gameState === 'playing') {
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
@@ -425,7 +416,7 @@ export default function QuizGamePage() {
         timerRef.current = null;
       }
     };
-  }, [gameState, currentIndex, userAnswers]);
+  }, [gameState]);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -641,7 +632,6 @@ export default function QuizGamePage() {
         setQuestions(formattedQuestions);
         setCurrentIndex(0);
         setUserAnswers({});
-        setNotesMap({});
         setTimeLeft(QUIZ_TIME_SECONDS);
         setLoading(false);
 
@@ -671,14 +661,9 @@ export default function QuizGamePage() {
     }
   };
 
-  const handleSelectOption = async (optionIndex: number) => {
+  const handleSelectOption = (optionIndex: number) => {
     if (timeLeft <= 0 || submitting) return;
     if (userAnswers[currentIndex] !== undefined) return;
-
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
 
     const currentQ = questions[currentIndex];
     const isCorrect = optionIndex === currentQ.correct_index;
@@ -699,45 +684,6 @@ export default function QuizGamePage() {
       ...prev,
       [currentIndex]: optionIndex
     }));
-
-    if (!notesMap[currentIndex]) {
-      // 1. ප්‍රශ්නය සමඟ Database එකෙන්ම ලැබුණු ai_short_note එකක් තිබේ නම් ක්ෂණිකව පෙන්වීම
-      if (currentQ.ai_short_note && currentQ.ai_short_note.trim().length > 10) {
-        setNotesMap(prev => ({ ...prev, [currentIndex]: currentQ.ai_short_note! }));
-        return;
-      }
-
-      // 2. නොමැති නම් API එකට questionId ද සමඟ යවා Note එක ලබාගැනීම සහ Database හි Save කරවීම
-      setLoadingAiNote(true);
-      try {
-        const res = await fetch('/api/generate-note', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            questionId: currentQ.id,
-            question: currentQ.question,
-            answer: currentQ.options[currentQ.correct_index],
-            subject: subject,
-            grade: selectedGrade.label
-          })
-        });
-
-        const data = await res.json();
-        const noteResult = data?.note || `• ප්‍රශ්නයට අදාළ නිවැරදි පිළිතුර වන්නේ '${cleanOptionText(currentQ.options[currentQ.correct_index])}' වේ.`;
-        setNotesMap(prev => ({ ...prev, [currentIndex]: noteResult }));
-
-        if (data?.note) {
-          currentQ.ai_short_note = data.note;
-        }
-      } catch (err) {
-        setNotesMap(prev => ({
-          ...prev,
-          [currentIndex]: `• නිවැරදි පිළිතුර වන්නේ '${cleanOptionText(currentQ.options[currentQ.correct_index])}' වේ.`
-        }));
-      } finally {
-        setLoadingAiNote(false);
-      }
-    }
   };
 
   const handleFinishQuiz = async () => {
@@ -907,7 +853,7 @@ export default function QuizGamePage() {
                   </button>
                 </div>
 
-                {/* 1. DYNAMIC IQ METRIC DASHBOARD */}
+                {/* Dynamic IQ Metric Dashboard */}
                 <div className="relative overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-slate-50/60 border border-blue-100/90 rounded-2xl p-4 sm:p-5 shadow-xs">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -957,7 +903,7 @@ export default function QuizGamePage() {
                   </div>
                 </div>
 
-                {/* 2. MAIN ACTION BUTTON */}
+                {/* Main Action Button */}
                 <button
                   onClick={() => {
                     if (!currentUser) {
@@ -972,7 +918,7 @@ export default function QuizGamePage() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
-                {/* 3. HISTORY RECORD */}
+                {/* History Record */}
                 <div className="space-y-2 pt-2 border-t border-slate-100">
                   <span className="text-[11px] sm:text-xs font-black text-slate-700 block">
                     පෙර ලකුණු ලේඛනය (History):
@@ -1139,17 +1085,10 @@ export default function QuizGamePage() {
                       </span>
                     </div>
 
-                    {/* Timer Badge */}
-                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-white font-mono text-xs font-black tracking-wider shrink-0 shadow-sm transition-all ${
-                      hasAnsweredCurrent ? 'bg-amber-600 ring-2 ring-amber-300' : 'bg-blue-600'
-                    }`}>
-                      {hasAnsweredCurrent ? (
-                        <PauseCircle className="w-3.5 h-3.5 text-amber-200" />
-                      ) : (
-                        <Timer className="w-3.5 h-3.5 text-blue-200 animate-spin" style={{ animationDuration: '4s' }} />
-                      )}
+                    {/* Continuous Countdown Timer */}
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-600 text-white font-mono text-xs font-black tracking-wider shrink-0 shadow-sm">
+                      <Timer className="w-3.5 h-3.5 text-blue-200 animate-spin" style={{ animationDuration: '4s' }} />
                       <span>{formatTime(timeLeft)}</span>
-                      {hasAnsweredCurrent && <span className="text-[9px] uppercase font-bold tracking-tight text-amber-100 ml-0.5">(Paused)</span>}
                     </div>
 
                     <span className="font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg text-[10px] sm:text-xs">
@@ -1236,90 +1175,65 @@ export default function QuizGamePage() {
                     })}
                   </div>
 
-                  {/* 1. ඉහළින්ම: NEXT / FINISH BUTTON & RED NOTICE BADGE */}
-                  <div className="pt-2 space-y-2">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5">
-                      {/* RED NOTICE: කාලය නතර වන බව පෙන්වන Badge එක */}
-                      {hasAnsweredCurrent ? (
-                        <div className="w-full sm:flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-rose-50 border border-rose-300 text-rose-700 rounded-xl text-[10.5px] sm:text-[11.5px] font-black text-center shadow-xs animate-in fade-in zoom-in-95 duration-200">
-                          <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping shrink-0" />
-                          <span>ඔබ short note එක කියවන තුරු කාලය නතර වේ ⏸️</span>
-                        </div>
-                      ) : (
-                        <div className="hidden sm:block sm:flex-1" />
-                      )}
-
-                      {/* Next / Finish Button */}
-                      {currentIndex < questions.length - 1 ? (
-                        <button
-                          type="button"
-                          disabled={!hasAnsweredCurrent || timeLeft <= 0}
-                          onClick={() => setCurrentIndex(currentIndex + 1)}
-                          className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-xs sm:text-sm font-black shadow-sm active:scale-95 transition-all shrink-0 ${
-                            hasAnsweredCurrent
-                              ? 'bg-blue-600 hover:bg-blue-500 ring-2 ring-blue-300 cursor-pointer'
-                              : 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60'
-                          }`}
-                        >
-                          <span>ඊළඟ ප්‍රශ්නය</span> <ArrowRight className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={!hasAnsweredCurrent || submitting}
-                          onClick={handleFinishQuiz}
-                          className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-xs sm:text-sm font-black shadow-sm active:scale-95 transition-all shrink-0 ${
-                            hasAnsweredCurrent
-                              ? 'bg-emerald-600 hover:bg-emerald-500 cursor-pointer'
-                              : 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60'
-                          }`}
-                        >
-                          {submitting ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              <span>සුරකිමින්...</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>Finish & View Marks</span>
-                              <CheckCircle2 className="w-4 h-4" />
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
+                  {/* NEXT / FINISH ACTION BUTTON (No Pause Notice) */}
+                  <div className="pt-2 flex justify-end">
+                    {currentIndex < questions.length - 1 ? (
+                      <button
+                        type="button"
+                        disabled={!hasAnsweredCurrent || timeLeft <= 0}
+                        onClick={() => setCurrentIndex(currentIndex + 1)}
+                        className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-xs sm:text-sm font-black shadow-sm active:scale-95 transition-all shrink-0 ${
+                          hasAnsweredCurrent
+                            ? 'bg-blue-600 hover:bg-blue-500 ring-2 ring-blue-300 cursor-pointer'
+                            : 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60'
+                        }`}
+                      >
+                        <span>ඊළඟ ප්‍රශ්නය</span> <ArrowRight className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={!hasAnsweredCurrent || submitting}
+                        onClick={handleFinishQuiz}
+                        className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-xs sm:text-sm font-black shadow-sm active:scale-95 transition-all shrink-0 ${
+                          hasAnsweredCurrent
+                            ? 'bg-emerald-600 hover:bg-emerald-500 cursor-pointer'
+                            : 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60'
+                        }`}
+                      >
+                        {submitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>සුරකිමින්...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Finish & View Marks</span>
+                            <CheckCircle2 className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
 
-                  {/* 2. මැදින්: AI SHORT NOTE BOX */}
+                  {/* 🔒 LOCKED AI SHORT NOTE BOX */}
                   {hasAnsweredCurrent && (
-                    <div className="mt-2 p-3.5 sm:p-4 bg-gradient-to-r from-emerald-50 via-teal-50/70 to-emerald-50 border border-emerald-200/90 rounded-xl sm:rounded-2xl text-xs text-slate-800 shadow-sm block w-full h-auto animate-in fade-in duration-200">
-                      <div className="flex items-start gap-2.5 sm:gap-3">
-                        <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">
-                          <Sparkles className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
+                    <div className="mt-2 p-3 sm:p-3.5 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl text-xs text-slate-600 flex items-center justify-between gap-2 shadow-2xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 text-xs">
+                          <Lock className="w-3.5 h-3.5" />
                         </div>
-                        <div className="flex-1 w-full overflow-visible">
-                          <strong className="text-emerald-950 font-bold block mb-1.5 text-xs sm:text-[13px]">
-                            AI කෙටි සටහන (Short Note):
-                          </strong>
-                          {loadingAiNote && !notesMap[currentIndex] ? (
-                            <div className="inline-flex items-center gap-1.5 text-slate-500 font-medium text-[11px] sm:text-xs py-1">
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
-                              ප්‍රශ්නයට අදාළ කෙටි සටහන සකසමින් පවතී...
-                            </div>
-                          ) : (
-                            <div
-                              style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
-                              className="text-[12px] sm:text-[12.5px] text-slate-700 font-medium leading-relaxed block w-full space-y-1"
-                            >
-                              {notesMap[currentIndex] || `• ප්‍රශ්නයට අදාළ නිවැරදි පිළිතුර වන්නේ '${cleanOptionText(currentQ.options[currentQ.correct_index])}' වේ.`}
-                            </div>
-                          )}
-                        </div>
+                        <span className="font-bold text-[11px] sm:text-xs text-slate-700 truncate">
+                          AI කෙටි සටහන් (Short Notes) පහසුකම ළඟදීම බලාපොරොත්තු වන්න.
+                        </span>
                       </div>
+                      <span className="text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                        Coming Soon
+                      </span>
                     </div>
                   )}
 
-                  {/* 3. යටින්ම: PREVIOUS BUTTON */}
+                  {/* PREVIOUS BUTTON */}
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-start">
                     <button
                       type="button"
@@ -1444,13 +1358,14 @@ export default function QuizGamePage() {
                             )}
                           </div>
 
-                          {/* Review Short Note Box */}
-                          <div className="mt-1.5 p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-lg text-[10.5px] text-slate-700">
-                            <span className="font-bold text-emerald-950 block mb-0.5">📌 AI Short Note:</span>
-                            <span className="whitespace-pre-wrap leading-relaxed block">
-                              {notesMap[idx] || q.explanation || `• නිවැරදි පිළිතුර වන්නේ '${cleanOptionText(q.options[q.correct_index])}' වේ.`}
-                            </span>
-                          </div>
+                          {q.explanation && (
+                            <div className="mt-1.5 p-2 bg-emerald-50/70 border border-emerald-200 rounded-lg text-[10.5px] text-slate-700">
+                              <span className="font-bold text-emerald-950 block mb-0.5">📌 පැහැදිලි කිරීම:</span>
+                              <span className="whitespace-pre-wrap leading-relaxed block">
+                                {q.explanation}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -1593,7 +1508,7 @@ export default function QuizGamePage() {
 
         </main>
 
-        {/* NORMAL & CLEAN LOGIN MODAL */}
+        {/* AUTH MODAL */}
         {showAuthModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
             <div className="bg-white rounded-3xl border border-slate-100 max-w-sm sm:max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
@@ -1834,7 +1749,7 @@ export default function QuizGamePage() {
           </div>
         )}
 
-        {/* 3-SECOND COUNTDOWN MODAL */}
+        {/* 5-SECOND COUNTDOWN MODAL */}
         {showCountdownModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
             <div className="bg-white rounded-3xl border-2 border-emerald-300 max-w-sm w-full p-6 text-center space-y-3.5 shadow-2xl">

@@ -16,9 +16,6 @@ import {
   EyeOff, 
   X,
   Loader2,
-  Upload,
-  Lock,
-  Unlock,
   FileText,
   Plus,
   Trash,
@@ -74,7 +71,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   
-  // Floating Toast Alert (Popup එක)
+  // Floating Toast Alert
   const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' | 'loading' } | null>(null);
 
   const showToast = (text: string, type: 'success' | 'error' | 'loading' = 'success', duration = 3500) => {
@@ -93,7 +90,7 @@ export default function AdminPage() {
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
 
-  // 1. News Form State (Social Media Link, Subtitle, Gallery සියල්ල සහිතයි)
+  // 1. News Form State
   const [newsForm, setNewsForm] = useState({
     title: '',
     subtitle: '',
@@ -194,7 +191,7 @@ export default function AdminPage() {
     loadData();
   }, []);
 
-  // Storage File Upload Helper
+  // Storage Helper
   const uploadFileToStorage = async (file: File, folder: string) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
@@ -209,7 +206,7 @@ export default function AdminPage() {
     return { url: data.publicUrl, path: fileName };
   };
 
-  // ── News Handlers ──
+  // News Handlers
   const handleNewsImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -324,7 +321,7 @@ export default function AdminPage() {
     });
   };
 
-  // ── Achievement Handlers ──
+  // Achievement Handlers
   const handlePosterUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -365,7 +362,7 @@ export default function AdminPage() {
     setLoading(false);
   };
 
-  // ── Exam Results Handlers ──
+  // Exam Handlers
   const addStudentRow = () => {
     setTopStudents([...topStudents, { name: '', marks: '', status: '' }]);
   };
@@ -406,7 +403,7 @@ export default function AdminPage() {
     setLoading(false);
   };
 
-  // ── Admissions Handlers ──
+  // Admissions Handlers
   const toggleAdmissionStatus = async () => {
     const newStatus = !admissionSettings.is_open;
     setAdmissionSettings(prev => ({ ...prev, is_open: newStatus }));
@@ -452,7 +449,7 @@ export default function AdminPage() {
     }
   };
 
-  // ── Video Handlers ──
+  // Video Handlers
   const handleVideoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -487,9 +484,23 @@ export default function AdminPage() {
     }
   };
 
+  // Nav Items Definition
+  const navTabs = [
+    { key: 'news', label: 'පුවත්', count: newsList.length, icon: Newspaper, color: 'text-emerald-700', activeBg: 'bg-[#065F46]' },
+    { key: 'achievements', label: 'Posters', count: achievementList.length, icon: Trophy, color: 'text-amber-500', activeBg: 'bg-amber-500' },
+    { key: 'exams', label: 'විභාග', icon: GraduationCap, color: 'text-emerald-600', activeBg: 'bg-emerald-700' },
+    { key: 'admissions', label: 'ලියාපදිංචි', icon: FileText, color: 'text-blue-600', activeBg: 'bg-blue-600' },
+    { key: 'video', label: 'වීඩියෝ', count: videoList.length, icon: Video, color: 'text-red-600', activeBg: 'bg-red-600' },
+  ] as const;
+
+  const handleTabChange = (key: typeof activeTab) => {
+    setActiveTab(key);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    // Navbar එකට යට නොවීමට pt-24 (Mobile) සහ md:pt-32 (Desktop) Spacing
-    <div className="min-h-screen bg-slate-50 text-slate-800 pt-24 md:pt-32 pb-16 px-3.5 sm:px-6 lg:px-8 font-sans">
+    // pb-28: Mobile පහළින් Curved Bar එකට Form එක යට වීම වැළැක්වීමට
+    <div className="min-h-screen bg-slate-50 text-slate-800 pt-20 md:pt-28 pb-28 md:pb-16 px-3.5 sm:px-6 lg:px-8 font-sans">
       
       {/* ── Toast Alert Popup ── */}
       {toast && (
@@ -520,56 +531,29 @@ export default function AdminPage() {
           <p className="text-slate-500 text-xs">පුවත්, ජයග්‍රහණ, විභාග ලකුණු සහ ඇතුළත් කිරීම් සම්පූර්ණ කළමනාකරණය</p>
         </div>
 
-        {/* ── 5 Main Tabs (Navigation) ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs gap-1">
-          <button
-            onClick={() => setActiveTab('news')}
-            className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'news' ? 'bg-[#065F46] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <Newspaper className="w-3.5 h-3.5" /> පුවත් ({newsList.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab('achievements')}
-            className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'achievements' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <Trophy className="w-3.5 h-3.5" /> Posters ({achievementList.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab('exams')}
-            className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'exams' ? 'bg-emerald-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <GraduationCap className="w-3.5 h-3.5" /> විභාග ලකුණු
-          </button>
-
-          <button
-            onClick={() => setActiveTab('admissions')}
-            className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'admissions' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" /> ලියාපදිංචි PDF
-          </button>
-
-          <button
-            onClick={() => setActiveTab('video')}
-            className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'video' ? 'bg-red-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <Video className="w-3.5 h-3.5" /> YouTube ({videoList.length})
-          </button>
+        {/* ── DESKTOP ONLY TAB BAR (Mobile එකේදී සඟවා ඇත) ── */}
+        <div className="hidden md:grid grid-cols-5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs gap-1">
+          {navTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => handleTabChange(tab.key)}
+                className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  isActive ? `${tab.activeBg} text-white shadow-xs` : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+                {'count' in tab && tab.count !== undefined && <span>({tab.count})</span>}
+              </button>
+            );
+          })}
         </div>
 
         {/* ══════════════════════════════════════════════════════════════
-            1. TAB: NEWS & ARTICLES (Social Media, Subtitle, Gallery සහිතයි)
+            1. TAB: NEWS & ARTICLES
         ══════════════════════════════════════════════════════════════ */}
         {activeTab === 'news' && (
           <div className="space-y-6">
@@ -586,7 +570,6 @@ export default function AdminPage() {
                 )}
               </div>
 
-              {/* Title */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">ප්‍රධාන මාතෘකාව (Main Title) *</label>
                 <input
@@ -599,7 +582,6 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* Subtitle */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">උප මාතෘකාව / කැපීපෙනෙන සාරාංශය (Subtitle)</label>
                 <input
@@ -649,7 +631,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Cover Image Direct Upload */}
               <div className="p-3.5 border-2 border-dashed border-emerald-500/40 bg-emerald-50/20 rounded-2xl space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-bold text-slate-800">ප්‍රධාන ආවරණ පින්තූරය (Cover Image) Upload කරන්න:</label>
@@ -675,7 +656,6 @@ export default function AdminPage() {
                 )}
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">සම්පූර්ණ විස්තරය (Description / Paragraphs) *</label>
                 <textarea
@@ -688,7 +668,6 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* Action Button & Social Media Link Box */}
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                   <LinkIcon className="w-3.5 h-3.5 text-emerald-700" />
@@ -712,7 +691,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Gallery Images Box */}
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-700">
                   <div className="flex items-center gap-1.5">
@@ -739,7 +717,6 @@ export default function AdminPage() {
               </button>
             </form>
 
-            {/* News Manage List (Live/Draft, Edit, Delete) */}
             <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs">
               <h3 className="text-xs sm:text-sm font-bold text-slate-900 mb-3 pb-2 border-b">
                 දැනට පළ කර ඇති පුවත් ({newsList.length})
@@ -841,7 +818,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Aspect Ratio Switch */}
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5">
                 <label className="block text-[11px] font-bold text-slate-700">පෝස්ටර් Frame Size එක තෝරන්න:</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -870,7 +846,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Direct Image Upload Box */}
               <div className="p-4 border-2 border-dashed border-emerald-500/40 bg-emerald-50/30 rounded-2xl text-center space-y-2">
                 <p className="text-xs font-bold text-slate-800">පෝස්ටර් පින්තූරය කෙළින්ම මෙතැනින් Upload කරන්න:</p>
                 <input
@@ -896,7 +871,6 @@ export default function AdminPage() {
               </button>
             </form>
 
-            {/* List */}
             <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs">
               <h4 className="text-xs sm:text-sm font-bold text-slate-900 mb-3 pb-2 border-b">දැනට ඇති ජයග්‍රහණ ({achievementList.length})</h4>
               <div className="divide-y">
@@ -930,7 +904,7 @@ export default function AdminPage() {
         )}
 
         {/* ══════════════════════════════════════════════════════════════
-            3. TAB: EXAM RESULTS (TABLE පිරවීමේ ක්‍රමය)
+            3. TAB: EXAM RESULTS
         ══════════════════════════════════════════════════════════════ */}
         {activeTab === 'exams' && (
           <div className="space-y-6">
@@ -1005,7 +979,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Student Score Rows */}
               <div className="space-y-2 pt-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-900">විශිෂ්ට සාමාර්ථ ගත් සිසුන්ගේ Table එක:</label>
@@ -1075,12 +1048,11 @@ export default function AdminPage() {
         )}
 
         {/* ══════════════════════════════════════════════════════════════
-            4. TAB: ADMISSIONS (INSTANT TOGGLE & AUTO-REPLACE PDF)
+            4. TAB: ADMISSIONS
         ══════════════════════════════════════════════════════════════ */}
         {activeTab === 'admissions' && (
           <div className="space-y-6">
             <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 space-y-4 shadow-xs">
-              
               <div className="flex items-center justify-between border-b pb-4">
                 <div>
                   <h3 className="text-sm sm:text-base font-black text-slate-900">ලියාපදිංචිය විවෘත කිරීම / වසා දැමීම</h3>
@@ -1094,15 +1066,11 @@ export default function AdminPage() {
                     admissionSettings.is_open ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
                   }`}
                 >
-                  {admissionSettings.is_open ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                   <span>{admissionSettings.is_open ? 'විවෘතයි (OPEN)' : 'වසා ඇත (CLOSED)'}</span>
                 </button>
               </div>
 
-              {/* PDF Auto-replace Upload Boxes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                
-                {/* Grade 1 PDF */}
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                   <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
                     1 ශ්‍රේණිය අයදුම්පත (PDF)
@@ -1124,7 +1092,6 @@ export default function AdminPage() {
                   </label>
                 </div>
 
-                {/* Grade 6 PDF */}
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                   <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
                     6 ශ්‍රේණිය අයදුම්පත (PDF)
@@ -1145,9 +1112,7 @@ export default function AdminPage() {
                     />
                   </label>
                 </div>
-
               </div>
-
             </div>
           </div>
         )}
@@ -1245,7 +1210,6 @@ export default function AdminPage() {
               </button>
             </form>
 
-            {/* Video List */}
             <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs">
               <h3 className="text-xs sm:text-sm font-bold text-slate-900 mb-3 pb-2 border-b">
                 දැනට ඇති වීඩියෝ ({videoList.length})
@@ -1280,6 +1244,39 @@ export default function AdminPage() {
         )}
 
       </div>
+
+      {/* ── 📱 FLOATING CURVED BOTTOM DOCK (MOBILE ONLY) ── */}
+      <div className="md:hidden fixed bottom-4 inset-x-3 z-40">
+        <div className="bg-slate-900/90 backdrop-blur-lg border border-white/15 shadow-2xl rounded-[28px] p-1.5 flex items-center justify-around">
+          {navTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => handleTabChange(tab.key)}
+                className={`relative flex flex-col items-center justify-center py-2 px-3 rounded-2xl transition-all duration-200 active:scale-90 ${
+                  isActive 
+                    ? 'bg-white/15 text-white shadow-inner font-bold' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : ''}`} />
+                <span className="text-[10px] mt-0.5 tracking-tight font-medium">
+                  {tab.label}
+                </span>
+
+                {/* Active Indicator Dot */}
+                {isActive && (
+                  <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-emerald-400" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
     </div>
   );
 }
