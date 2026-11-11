@@ -2,17 +2,17 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { 
-  Trophy, 
-  Medal, 
-  Crown, 
-  CheckCircle2, 
-  ArrowRight, 
-  ArrowLeft, 
-  RotateCcw, 
-  BookOpen, 
-  Check, 
-  Loader2, 
+import {
+  Trophy,
+  Medal,
+  Crown,
+  CheckCircle2,
+  ArrowRight,
+  ArrowLeft,
+  RotateCcw,
+  BookOpen,
+  Check,
+  Loader2,
   AlertCircle,
   Gamepad2,
   Flame,
@@ -29,7 +29,9 @@ import {
   Phone,
   Calendar,
   KeyRound,
-  X
+  X,
+  Sparkles,
+  PauseCircle
 } from 'lucide-react';
 
 interface Question {
@@ -38,6 +40,7 @@ interface Question {
   options: string[];
   correct_index: number;
   explanation?: string;
+  ai_short_note?: string;
 }
 
 interface ScoreRecord {
@@ -59,14 +62,13 @@ const GRADES = [
   { label: "ශ්‍රේණිය 11", value: "Grade 11" }
 ];
 
-// Grade 6 - 9 සඳහා විෂයයන් 13
 const SUBJECTS_GRADE_6_TO_9 = [
-  "විද්‍යාව", 
-  "ගණිතය", 
-  "ඉතිහාසය", 
+  "විද්‍යාව",
+  "ගණිතය",
+  "ඉතිහාසය",
   "තොරතුරු තාක්ෂණය (ICT)",
-  "සිංහල", 
-  "ඉංග්‍රීසි", 
+  "සිංහල",
+  "ඉංග්‍රීසි",
   "සංගීතය",
   "චිත්‍ර",
   "පුරවැසි අධ්‍යාපනය",
@@ -76,14 +78,13 @@ const SUBJECTS_GRADE_6_TO_9 = [
   "දෙමළ (දෙවන භාෂාව)"
 ];
 
-// Grade 10 - 11 සඳහා ප්‍රධාන හා කාණ්ඩ විෂයයන් 17 ම
 const SUBJECTS_GRADE_10_TO_11 = [
-  "විද්‍යාව", 
-  "ගණිතය", 
+  "විද්‍යාව",
+  "ගණිතය",
   "තොරතුරු තාක්ෂණය (ICT)",
-  "සිංහල", 
-  "ඉංග්‍රීසි", 
-  "ඉතිහාසය", 
+  "සිංහල",
+  "ඉංග්‍රීසි",
+  "ඉතිහාසය",
   "පුරවැසි අධ්‍යාපනය",
   "භූගෝල විද්‍යාව",
   "වාණිජ සහ ගිණුම්කරණය",
@@ -98,7 +99,7 @@ const SUBJECTS_GRADE_10_TO_11 = [
 ];
 
 const ALL_SUBJECTS = Array.from(new Set([...SUBJECTS_GRADE_6_TO_9, ...SUBJECTS_GRADE_10_TO_11]));
-const QUIZ_TIME_SECONDS = 600; // විනාඩි 10
+const QUIZ_TIME_SECONDS = 600;
 
 const MONTH_NAMES = [
   "ජනවාරි (Jan)", "පෙබරවාරි (Feb)", "මාර්තු (Mar)", "අප්‍රේල් (Apr)",
@@ -115,7 +116,6 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-// Web Audio API Helper
 function playFeedbackSound(isCorrect: boolean) {
   try {
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -226,27 +226,47 @@ function calculateDynamicIQ(history: ScoreRecord[]) {
 }
 
 export default function QuizGamePage() {
+  const cleanOptionText = (text: string) => {
+    if (!text) return '';
+
+    let cleaned = text.replace(/\s*[\(\[].*?[\)\]]\s*/g, '').trim();
+
+    const connectors = [' සහ ', ' හා ', ' මඟින් ', ' හෝ ', ' හරහා ', ' හේතුවෙන් '];
+    for (const conn of connectors) {
+      const idx = cleaned.indexOf(conn);
+      if (idx > 6) {
+        cleaned = cleaned.substring(0, idx).trim();
+        break;
+      }
+    }
+
+    cleaned = cleaned.replace(/\s+(පිළිබිඹු වීම|සිදුවීම|පැවතීම|තිබීම|ලැබීම)$/i, '').trim();
+
+    const words = cleaned.split(/\s+/);
+    if (words.length > 4) {
+      cleaned = words.slice(0, 4).join(' ');
+    }
+
+    return cleaned;
+  };
+
   const [gameState, setGameState] = useState<'profile' | 'select-grade' | 'setup' | 'playing' | 'result'>('profile');
 
-  // Authenticated Student State
   const [currentUser, setCurrentUser] = useState<{ name: string; phone: string; pin: string; birth_date?: string } | null>(null);
   const [studentHistory, setStudentHistory] = useState<ScoreRecord[]>([]);
 
-  // Simple Auth Modal States
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-pin' | 'set-new-pin'>('login');
-  
+
   const [formName, setFormName] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formPin, setFormPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [showPin, setShowPin] = useState(false);
 
-  // Ready 3-Sec Countdown Modal State
   const [showCountdownModal, setShowCountdownModal] = useState(false);
   const [startCount, setStartCount] = useState(5);
 
-  // Birth Date Selectors
   const [birthYear, setBirthYear] = useState('2012');
   const [birthMonth, setBirthMonth] = useState('01');
   const [birthDay, setBirthDay] = useState('01');
@@ -255,7 +275,6 @@ export default function QuizGamePage() {
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Gameplay
   const [selectedGrade, setSelectedGrade] = useState(GRADES[4]);
   const [subject, setSubject] = useState(SUBJECTS_GRADE_10_TO_11[0]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -265,18 +284,17 @@ export default function QuizGamePage() {
   const [submitting, setSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Instant Feedback State
+  const [notesMap, setNotesMap] = useState<{ [key: number]: string }>({});
+  const [loadingAiNote, setLoadingAiNote] = useState(false);
+
   const [isShaking, setIsShaking] = useState(false);
 
-  // Timer
   const [timeLeft, setTimeLeft] = useState(QUIZ_TIME_SECONDS);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Leaderboard (For PC View)
   const [leaderboard, setLeaderboard] = useState<ScoreRecord[]>([]);
   const [leaderboardSubject, setLeaderboardSubject] = useState(SUBJECTS_GRADE_10_TO_11[0]);
 
-  // Grade 6-9 සඳහා විෂයයන් 13 සහ Grade 10-11 සඳහා විෂයයන් 17 මාරු කිරීම
   const isJuniorGrade = ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'].includes(selectedGrade.value);
   const availableSubjects = isJuniorGrade ? SUBJECTS_GRADE_6_TO_9 : SUBJECTS_GRADE_10_TO_11;
 
@@ -300,7 +318,6 @@ export default function QuizGamePage() {
 
   const selectedBirthDate = `${birthYear}-${birthMonth}-${birthDay}`;
 
-  // Screen scroll locking when auth modal is active
   useEffect(() => {
     if (showAuthModal || showCountdownModal) {
       document.body.style.overflow = 'hidden';
@@ -312,7 +329,6 @@ export default function QuizGamePage() {
     };
   }, [showAuthModal, showCountdownModal]);
 
-  // Session Management: පිටුවට ආපු ගමන් Session පරීක්ෂා කිරීම
   useEffect(() => {
     const savedSession = localStorage.getItem('school_quiz_student_session');
     if (savedSession) {
@@ -331,7 +347,6 @@ export default function QuizGamePage() {
     setShowAuthModal(true);
   }, []);
 
-  // Leaderboard Fetch
   const fetchLeaderboardData = async (subj: string) => {
     try {
       const cleanSubj = subj.trim();
@@ -361,7 +376,6 @@ export default function QuizGamePage() {
     }
   };
 
-  // Student History Fetch
   const fetchStudentHistory = async (phone: string) => {
     try {
       const cleanPhone = phone.trim();
@@ -383,10 +397,11 @@ export default function QuizGamePage() {
     fetchLeaderboardData(leaderboardSubject);
   }, [leaderboardSubject]);
 
-  // 10-Minute Quiz Countdown
   useEffect(() => {
-    if (gameState === 'playing') {
-      setTimeLeft(QUIZ_TIME_SECONDS);
+    const isCurrentAnswered = userAnswers[currentIndex] !== undefined;
+
+    if (gameState === 'playing' && !isCurrentAnswered) {
+      if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -398,15 +413,20 @@ export default function QuizGamePage() {
         });
       }, 1000);
     } else {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
-  }, [gameState]);
+  }, [gameState, currentIndex, userAnswers]);
 
-  // Auth Submit Handler
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -448,11 +468,11 @@ export default function QuizGamePage() {
           return;
         }
 
-        const sessionData = { 
-          name: userRecord.player_name, 
-          phone: userRecord.phone_number, 
+        const sessionData = {
+          name: userRecord.player_name,
+          phone: userRecord.phone_number,
           pin: userRecord.pin_code,
-          birth_date: userRecord.birth_date 
+          birth_date: userRecord.birth_date
         };
         setCurrentUser(sessionData);
         localStorage.setItem('school_quiz_student_session', JSON.stringify(sessionData));
@@ -488,9 +508,9 @@ export default function QuizGamePage() {
 
         const { error: insertError } = await supabase
           .from('student_users')
-          .insert([{ 
-            player_name: cleanName, 
-            phone_number: cleanPhone, 
+          .insert([{
+            player_name: cleanName,
+            phone_number: cleanPhone,
             pin_code: cleanPin,
             birth_date: selectedBirthDate
           }]);
@@ -501,11 +521,11 @@ export default function QuizGamePage() {
           return;
         }
 
-        const sessionData = { 
-          name: cleanName, 
-          phone: cleanPhone, 
+        const sessionData = {
+          name: cleanName,
+          phone: cleanPhone,
           pin: cleanPin,
-          birth_date: selectedBirthDate 
+          birth_date: selectedBirthDate
         };
         setCurrentUser(sessionData);
         localStorage.setItem('school_quiz_student_session', JSON.stringify(sessionData));
@@ -602,7 +622,7 @@ export default function QuizGamePage() {
           const rawOptions: string[] = typeof item.options === 'string'
             ? JSON.parse(item.options)
             : item.options;
-          
+
           const originalCorrectIndex = Number(item.correct_index);
           const correctAnswerText = rawOptions[originalCorrectIndex];
           const shuffledOptions = shuffleArray(rawOptions);
@@ -613,13 +633,16 @@ export default function QuizGamePage() {
             question: item.question,
             options: shuffledOptions,
             correct_index: newCorrectIndex >= 0 ? newCorrectIndex : 0,
-            explanation: item.explanation
+            explanation: item.explanation,
+            ai_short_note: item.ai_short_note
           };
         });
 
         setQuestions(formattedQuestions);
         setCurrentIndex(0);
         setUserAnswers({});
+        setNotesMap({});
+        setTimeLeft(QUIZ_TIME_SECONDS);
         setLoading(false);
 
         setShowCountdownModal(true);
@@ -648,10 +671,14 @@ export default function QuizGamePage() {
     }
   };
 
-  // Instant Feedback: උත්තරයක් ක්ලික් කළ සැනින් Sound & Vibration සමඟ හරි/වැරදි පෙන්වීම
-  const handleSelectOption = (optionIndex: number) => {
+  const handleSelectOption = async (optionIndex: number) => {
     if (timeLeft <= 0 || submitting) return;
-    if (userAnswers[currentIndex] !== undefined) return; // දැනටමත් පිළිතුරු දී ඇත්නම් වෙනස් කළ නොහැක
+    if (userAnswers[currentIndex] !== undefined) return;
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
     const currentQ = questions[currentIndex];
     const isCorrect = optionIndex === currentQ.correct_index;
@@ -672,13 +699,52 @@ export default function QuizGamePage() {
       ...prev,
       [currentIndex]: optionIndex
     }));
+
+    if (!notesMap[currentIndex]) {
+      // 1. ප්‍රශ්නය සමඟ Database එකෙන්ම ලැබුණු ai_short_note එකක් තිබේ නම් ක්ෂණිකව පෙන්වීම
+      if (currentQ.ai_short_note && currentQ.ai_short_note.trim().length > 10) {
+        setNotesMap(prev => ({ ...prev, [currentIndex]: currentQ.ai_short_note! }));
+        return;
+      }
+
+      // 2. නොමැති නම් API එකට questionId ද සමඟ යවා Note එක ලබාගැනීම සහ Database හි Save කරවීම
+      setLoadingAiNote(true);
+      try {
+        const res = await fetch('/api/generate-note', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            questionId: currentQ.id,
+            question: currentQ.question,
+            answer: currentQ.options[currentQ.correct_index],
+            subject: subject,
+            grade: selectedGrade.label
+          })
+        });
+
+        const data = await res.json();
+        const noteResult = data?.note || `• ප්‍රශ්නයට අදාළ නිවැරදි පිළිතුර වන්නේ '${cleanOptionText(currentQ.options[currentQ.correct_index])}' වේ.`;
+        setNotesMap(prev => ({ ...prev, [currentIndex]: noteResult }));
+
+        if (data?.note) {
+          currentQ.ai_short_note = data.note;
+        }
+      } catch (err) {
+        setNotesMap(prev => ({
+          ...prev,
+          [currentIndex]: `• නිවැරදි පිළිතුර වන්නේ '${cleanOptionText(currentQ.options[currentQ.correct_index])}' වේ.`
+        }));
+      } finally {
+        setLoadingAiNote(false);
+      }
+    }
   };
 
   const handleFinishQuiz = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (!currentUser) return;
     setSubmitting(true);
-    
+
     let finalScore = 0;
     questions.forEach((q, idx) => {
       if (userAnswers[idx] === q.correct_index) finalScore += 1;
@@ -755,7 +821,6 @@ export default function QuizGamePage() {
 
   const currentQ = questions[currentIndex];
   const hasAnsweredCurrent = userAnswers[currentIndex] !== undefined;
-  const isCurrentCorrect = hasAnsweredCurrent && userAnswers[currentIndex] === currentQ?.correct_index;
 
   return (
     <div className="min-h-screen bg-[#F0FDF4]/70 pt-20 sm:pt-24 lg:pt-28 pb-10 px-3 sm:px-6 lg:px-8 max-w-xl lg:max-w-7xl mx-auto transform-gpu subpixel-antialiased">
@@ -803,16 +868,16 @@ export default function QuizGamePage() {
           </div>
         </header>
 
-        {/* Main Grid: Mobile (single column), Desktop (7:5 two columns with Leaderboard) */}
+        {/* Main Grid */}
         <main className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
-          
-          {/* ================= LEFT COLUMN: GAME FRAME ================= */}
+
+          {/* LEFT COLUMN: GAME FRAME */}
           <div className="lg:col-span-7 flex flex-col justify-start">
 
             {/* STAGE 1: PROFILE & DYNAMIC IQ METRIC */}
             {gameState === 'profile' && (
               <div className="h-full bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-7 shadow-sm space-y-4 sm:space-y-5">
-                
+
                 {/* User Bar */}
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2.5 sm:gap-3">
@@ -842,7 +907,7 @@ export default function QuizGamePage() {
                   </button>
                 </div>
 
-                {/* ── 1. DYNAMIC IQ METRIC DASHBOARD ── */}
+                {/* 1. DYNAMIC IQ METRIC DASHBOARD */}
                 <div className="relative overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-slate-50/60 border border-blue-100/90 rounded-2xl p-4 sm:p-5 shadow-xs">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -870,7 +935,7 @@ export default function QuizGamePage() {
                   {/* Progress Line */}
                   <div className="space-y-1.5 pt-3">
                     <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/80 shadow-inner">
-                      <div 
+                      <div
                         className={`h-full bg-gradient-to-r ${iqMetrics.lineGradient} rounded-full transition-all duration-700 ease-out shadow-xs`}
                         style={{ width: `${iqMetrics.percent}%` }}
                       />
@@ -892,7 +957,7 @@ export default function QuizGamePage() {
                   </div>
                 </div>
 
-                {/* ── 2. MAIN ACTION BUTTON ── */}
+                {/* 2. MAIN ACTION BUTTON */}
                 <button
                   onClick={() => {
                     if (!currentUser) {
@@ -907,7 +972,7 @@ export default function QuizGamePage() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
-                {/* ── 3. HISTORY RECORD ── */}
+                {/* 3. HISTORY RECORD */}
                 <div className="space-y-2 pt-2 border-t border-slate-100">
                   <span className="text-[11px] sm:text-xs font-black text-slate-700 block">
                     පෙර ලකුණු ලේඛනය (History):
@@ -1052,10 +1117,10 @@ export default function QuizGamePage() {
               </div>
             )}
 
-            {/* STAGE 4: PLAYING FRAME WITH INSTANT FEEDBACK & EXPLANATION BOX */}
+            {/* STAGE 4: PLAYING FRAME */}
             {gameState === 'playing' && questions.length > 0 && (
               <div className="space-y-3 sm:space-y-4">
-                
+
                 {/* Status Bar */}
                 <div className="bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-sm space-y-2.5">
                   <div className="flex items-center justify-between text-xs font-black">
@@ -1074,9 +1139,17 @@ export default function QuizGamePage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-600 text-white font-mono text-xs font-black tracking-wider shrink-0 shadow-sm">
-                      <Timer className="w-3.5 h-3.5 text-blue-200 animate-spin" style={{ animationDuration: '4s' }} />
+                    {/* Timer Badge */}
+                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-white font-mono text-xs font-black tracking-wider shrink-0 shadow-sm transition-all ${
+                      hasAnsweredCurrent ? 'bg-amber-600 ring-2 ring-amber-300' : 'bg-blue-600'
+                    }`}>
+                      {hasAnsweredCurrent ? (
+                        <PauseCircle className="w-3.5 h-3.5 text-amber-200" />
+                      ) : (
+                        <Timer className="w-3.5 h-3.5 text-blue-200 animate-spin" style={{ animationDuration: '4s' }} />
+                      )}
                       <span>{formatTime(timeLeft)}</span>
+                      {hasAnsweredCurrent && <span className="text-[9px] uppercase font-bold tracking-tight text-amber-100 ml-0.5">(Paused)</span>}
                     </div>
 
                     <span className="font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg text-[10px] sm:text-xs">
@@ -1085,18 +1158,18 @@ export default function QuizGamePage() {
                   </div>
 
                   <div className="w-full h-2 sm:h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-200 ease-out"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
                 </div>
 
-                {/* Question & Options Card (with Shake effect on wrong) */}
+                {/* Question & Options Card */}
                 <div className={`bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 space-y-3.5 sm:space-y-4 shadow-sm transition-transform duration-200 ${
                   isShaking ? 'animate-[shake_0.4s_ease-in-out]' : ''
                 }`}>
-                  
+
                   <div className="flex items-start gap-2.5 sm:gap-3">
                     <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-blue-100 text-blue-800 font-black text-xs sm:text-sm flex items-center justify-center shrink-0 mt-0.5">
                       {currentIndex + 1}
@@ -1145,7 +1218,7 @@ export default function QuizGamePage() {
                             )}
                           </div>
 
-                          <span className="text-xs sm:text-sm leading-snug flex-1">{opt}</span>
+                          <span className="text-xs sm:text-sm leading-snug flex-1">{cleanOptionText(opt)}</span>
 
                           {hasAnsweredCurrent && isThisCorrect && (
                             <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full shrink-0">
@@ -1163,80 +1236,109 @@ export default function QuizGamePage() {
                     })}
                   </div>
 
-                  {/* Short Note Explanation Box */}
+                  {/* 1. ඉහළින්ම: NEXT / FINISH BUTTON & RED NOTICE BADGE */}
+                  <div className="pt-2 space-y-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                      {/* RED NOTICE: කාලය නතර වන බව පෙන්වන Badge එක */}
+                      {hasAnsweredCurrent ? (
+                        <div className="w-full sm:flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-rose-50 border border-rose-300 text-rose-700 rounded-xl text-[10.5px] sm:text-[11.5px] font-black text-center shadow-xs animate-in fade-in zoom-in-95 duration-200">
+                          <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping shrink-0" />
+                          <span>ඔබ short note එක කියවන තුරු කාලය නතර වේ ⏸️</span>
+                        </div>
+                      ) : (
+                        <div className="hidden sm:block sm:flex-1" />
+                      )}
+
+                      {/* Next / Finish Button */}
+                      {currentIndex < questions.length - 1 ? (
+                        <button
+                          type="button"
+                          disabled={!hasAnsweredCurrent || timeLeft <= 0}
+                          onClick={() => setCurrentIndex(currentIndex + 1)}
+                          className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-xs sm:text-sm font-black shadow-sm active:scale-95 transition-all shrink-0 ${
+                            hasAnsweredCurrent
+                              ? 'bg-blue-600 hover:bg-blue-500 ring-2 ring-blue-300 cursor-pointer'
+                              : 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60'
+                          }`}
+                        >
+                          <span>ඊළඟ ප්‍රශ්නය</span> <ArrowRight className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={!hasAnsweredCurrent || submitting}
+                          onClick={handleFinishQuiz}
+                          className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-xs sm:text-sm font-black shadow-sm active:scale-95 transition-all shrink-0 ${
+                            hasAnsweredCurrent
+                              ? 'bg-emerald-600 hover:bg-emerald-500 cursor-pointer'
+                              : 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60'
+                          }`}
+                        >
+                          {submitting ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span>සුරකිමින්...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Finish & View Marks</span>
+                              <CheckCircle2 className="w-4 h-4" />
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 2. මැදින්: AI SHORT NOTE BOX */}
                   {hasAnsweredCurrent && (
-                    <div className="mt-3 p-3 bg-gradient-to-r from-emerald-50/90 to-teal-50/80 border border-emerald-300 rounded-xl text-xs text-slate-700 flex items-start gap-2 animate-in fade-in duration-200">
-                      <span className="text-emerald-700 font-black text-sm shrink-0">📌</span>
-                      <div className="leading-relaxed">
-                        <strong className="text-emerald-900 font-bold">කෙටි සටහන (Short Note): </strong>
-                        {currentQ.explanation ? (
-                          currentQ.explanation
-                        ) : (
-                          <span>
-                            මෙම ප්‍රශ්නයේ නිවැරදි පිළිතුර වන්නේ <strong>&apos;{currentQ.options[currentQ.correct_index]}&apos;</strong> යන්නයි. විෂය කරුණුවලට අදාළ නිවැරදි සිද්ධාන්තය මතකයේ රඳවා ගන්න.
-                          </span>
-                        )}
+                    <div className="mt-2 p-3.5 sm:p-4 bg-gradient-to-r from-emerald-50 via-teal-50/70 to-emerald-50 border border-emerald-200/90 rounded-xl sm:rounded-2xl text-xs text-slate-800 shadow-sm block w-full h-auto animate-in fade-in duration-200">
+                      <div className="flex items-start gap-2.5 sm:gap-3">
+                        <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
+                        </div>
+                        <div className="flex-1 w-full overflow-visible">
+                          <strong className="text-emerald-950 font-bold block mb-1.5 text-xs sm:text-[13px]">
+                            AI කෙටි සටහන (Short Note):
+                          </strong>
+                          {loadingAiNote && !notesMap[currentIndex] ? (
+                            <div className="inline-flex items-center gap-1.5 text-slate-500 font-medium text-[11px] sm:text-xs py-1">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                              ප්‍රශ්නයට අදාළ කෙටි සටහන සකසමින් පවතී...
+                            </div>
+                          ) : (
+                            <div
+                              style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                              className="text-[12px] sm:text-[12.5px] text-slate-700 font-medium leading-relaxed block w-full space-y-1"
+                            >
+                              {notesMap[currentIndex] || `• ප්‍රශ්නයට අදාළ නිවැරදි පිළිතුර වන්නේ '${cleanOptionText(currentQ.options[currentQ.correct_index])}' වේ.`}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Navigation Buttons: උත්තරයක් දෙන තුරු Next button එක Disabled කර ඇත (No Skip) */}
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                  {/* 3. යටින්ම: PREVIOUS BUTTON */}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-start">
                     <button
                       type="button"
                       disabled={currentIndex === 0 || submitting || timeLeft <= 0}
                       onClick={() => setCurrentIndex(currentIndex - 1)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-slate-200 text-xs font-black text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none active:scale-95"
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-slate-200 text-xs font-black text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none active:scale-95 transition-all"
                     >
-                      <ArrowLeft className="w-3 h-3" /> Prev
+                      <ArrowLeft className="w-3.5 h-3.5" /> Prev (කලින් ප්‍රශ්නය)
                     </button>
-
-                    {currentIndex < questions.length - 1 ? (
-                      <button
-                        type="button"
-                        disabled={!hasAnsweredCurrent || timeLeft <= 0}
-                        onClick={() => setCurrentIndex(currentIndex + 1)}
-                        className={`inline-flex items-center gap-1 px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-white text-xs font-black shadow-sm active:scale-95 transition-all ${
-                          hasAnsweredCurrent 
-                            ? 'bg-blue-600 hover:bg-blue-500 ring-2 ring-blue-300 cursor-pointer' 
-                            : 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60'
-                        }`}
-                      >
-                        <span>ඊළඟ ප්‍රශ්නය</span> <ArrowRight className="w-3 h-3" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={!hasAnsweredCurrent || submitting}
-                        onClick={handleFinishQuiz}
-                        className={`inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-white text-xs font-black shadow-sm active:scale-95 transition-all ${
-                          hasAnsweredCurrent 
-                            ? 'bg-emerald-600 hover:bg-emerald-500 cursor-pointer' 
-                            : 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60'
-                        }`}
-                      >
-                        {submitting ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>සුරකිමින්...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Finish & View Marks</span>
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          </>
-                        )}
-                      </button>
-                    )}
                   </div>
+
                 </div>
               </div>
             )}
 
-            {/* STAGE 5: RESULT SCREEN (10 න් MARKS, හරි/වැරදි ලැයිස්තුව සමඟ) */}
+            {/* STAGE 5: RESULT SCREEN */}
             {gameState === 'result' && (
               <div className="space-y-4 animate-in fade-in duration-200">
-                
+
                 {/* Official Scoreboard Card */}
                 <div className="bg-white border-2 border-emerald-300 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-7 text-center space-y-3.5 shadow-md relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-600" />
@@ -1244,7 +1346,7 @@ export default function QuizGamePage() {
                   <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center mx-auto shadow-md">
                     <Trophy className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
-                  
+
                   <div>
                     <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-emerald-800 bg-emerald-100 px-3 py-0.5 rounded-full">
                       විභාග ප්‍රතිඵල පත්‍රය (Result Sheet)
@@ -1303,7 +1405,7 @@ export default function QuizGamePage() {
                   </div>
                 </div>
 
-                {/* Review Questions & Answers with Explanations */}
+                {/* Review Questions & Answers */}
                 <div className="bg-white border border-emerald-100 sm:border-2 rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-2.5 shadow-sm">
                   <h3 className="text-xs sm:text-sm font-black text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-1.5">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
@@ -1333,19 +1435,21 @@ export default function QuizGamePage() {
 
                           <div className="space-y-1 text-[11px] font-semibold pt-1 border-t border-slate-200/60">
                             <p className={isCorrect ? 'text-emerald-700' : 'text-rose-600'}>
-                              ඔබේ පිළිතුර: {userChoice !== undefined ? q.options[userChoice] : 'පිළිතුරු දී නැත'}
+                              ඔබේ පිළිතුර: {userChoice !== undefined ? cleanOptionText(q.options[userChoice]) : 'පිළිතුරු දී නැත'}
                             </p>
                             {!isCorrect && (
                               <p className="text-slate-900 font-bold bg-amber-50 border border-amber-300 p-1.5 rounded-md">
-                                නිවැරදි පිළිතුර: <span className="text-emerald-800">{q.options[q.correct_index]}</span>
+                                නිවැරදි පිළිතුර: <span className="text-emerald-800">{cleanOptionText(q.options[q.correct_index])}</span>
                               </p>
                             )}
                           </div>
 
                           {/* Review Short Note Box */}
-                          <div className="mt-1.5 p-2 bg-emerald-50/70 border border-emerald-200 rounded-lg text-[10.5px] text-slate-600">
-                            <span className="font-bold text-emerald-900">📌 Short Note: </span>
-                            {q.explanation || `නිවැරදි පිළිතුර වන්නේ '${q.options[q.correct_index]}' වේ.`}
+                          <div className="mt-1.5 p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-lg text-[10.5px] text-slate-700">
+                            <span className="font-bold text-emerald-950 block mb-0.5">📌 AI Short Note:</span>
+                            <span className="whitespace-pre-wrap leading-relaxed block">
+                              {notesMap[idx] || q.explanation || `• නිවැරදි පිළිතුර වන්නේ '${cleanOptionText(q.options[q.correct_index])}' වේ.`}
+                            </span>
                           </div>
                         </div>
                       );
@@ -1357,10 +1461,10 @@ export default function QuizGamePage() {
 
           </div>
 
-          {/* ================= RIGHT COLUMN: LIVE LEADERBOARD (DESKTOP ONLY) ================= */}
+          {/* RIGHT COLUMN: LIVE LEADERBOARD */}
           <div className="hidden lg:flex lg:col-span-5 flex-col justify-start">
             <div className="h-full bg-white border-2 border-emerald-100 rounded-[2.5rem] p-7 shadow-sm flex flex-col justify-between space-y-4 transform-gpu">
-              
+
               <div>
                 <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
                   <div className="flex items-center gap-2">
@@ -1390,10 +1494,10 @@ export default function QuizGamePage() {
                   </div>
                 ) : (
                   <div className="space-y-3 pt-2">
-                    
+
                     {/* Top 3 Cards Podium */}
                     <div className="grid grid-cols-3 gap-2 text-center items-end">
-                      
+
                       {/* 2nd Place */}
                       <div className="bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col items-center justify-between min-h-[125px] shadow-sm">
                         <div className="w-6 h-6 rounded-md bg-slate-200 text-slate-700 flex items-center justify-center font-black mb-0.5">
@@ -1489,12 +1593,11 @@ export default function QuizGamePage() {
 
         </main>
 
-        {/* ================= NORMAL, CLEAN & SMOOTH AUTH MODAL ================= */}
+        {/* NORMAL & CLEAN LOGIN MODAL */}
         {showAuthModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
             <div className="bg-white rounded-3xl border border-slate-100 max-w-sm sm:max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
-              
-              {/* Header */}
+
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
                   <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
@@ -1520,15 +1623,14 @@ export default function QuizGamePage() {
                 )}
               </div>
 
-              {/* Minimal Clean Tabs */}
               {(authMode === 'login' || authMode === 'register') && (
                 <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl">
                   <button
                     type="button"
                     onClick={() => { setAuthMode('login'); setAuthError(null); setAuthSuccess(null); }}
                     className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                      authMode === 'login' 
-                        ? 'bg-white text-slate-900 shadow-sm' 
+                      authMode === 'login'
+                        ? 'bg-white text-slate-900 shadow-sm'
                         : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
@@ -1538,8 +1640,8 @@ export default function QuizGamePage() {
                     type="button"
                     onClick={() => { setAuthMode('register'); setAuthError(null); setAuthSuccess(null); }}
                     className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                      authMode === 'register' 
-                        ? 'bg-white text-slate-900 shadow-sm' 
+                      authMode === 'register'
+                        ? 'bg-white text-slate-900 shadow-sm'
                         : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
@@ -1548,7 +1650,6 @@ export default function QuizGamePage() {
                 </div>
               )}
 
-              {/* Alerts */}
               {authError && (
                 <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-xs font-medium flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -1563,9 +1664,8 @@ export default function QuizGamePage() {
                 </div>
               )}
 
-              {/* Form */}
               <form onSubmit={handleAuthSubmit} className="space-y-3.5">
-                
+
                 {authMode === 'register' && (
                   <div className="space-y-1">
                     <label className="block text-xs font-semibold text-slate-700 flex items-center gap-1.5">

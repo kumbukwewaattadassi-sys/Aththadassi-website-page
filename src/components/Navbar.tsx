@@ -9,7 +9,7 @@ const LOGO_URL =
 const navLinks = [
   { label: "මුල් පිටුව", href: "/" },
   { label: "අපේ පාසල", href: "/about" },
-  { label: "අධ්‍යාපනය", href: "/academics" },
+  { label: "ජයග්‍රහණ", href: "/academics" },
   { label: "ප්‍රවෘත්ති", href: "/news" },
   { label: "අපව අමතන්න", href: "/contact" },
 ];

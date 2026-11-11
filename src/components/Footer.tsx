@@ -226,7 +226,7 @@ export default function Footer({
               &copy; 2026 Aththadassi K Vidyalaya
             </p>
             <p className="text-[10px] tracking-[0.2em] text-[#F59E0B] font-semibold uppercase">
-              Made By Student Leadership President &amp; Media Unit Captain in 2024
+              Made By Student Leadership President &amp; Media Unit Captain in 2024 / Chamoth Sandeepa
             </p>
           </div>
 
